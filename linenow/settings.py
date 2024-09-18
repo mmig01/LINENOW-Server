@@ -56,6 +56,10 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.kakao',
     'rest_framework_simplejwt',
+    
+    'accounts',
+    'booth',
+    'waiting',
 ]
 
 REST_FRAMEWORK = {
