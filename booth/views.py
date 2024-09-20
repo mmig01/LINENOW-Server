@@ -5,8 +5,9 @@ from django.db.models import Count
 from rest_framework.filters import OrderingFilter
 from .models import Booth
 from .serializers import BoothListSerializer, BoothDetailSerializer
+from rest_framework import viewsets, mixins
 
-class BoothViewSet(viewsets.ModelViewSet):
+class BoothViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.ListModelMixin):
     queryset = Booth.objects.all()
     filter_backends = [OrderingFilter]
     ordering_fields = ['name', 'waiting_count']
@@ -21,12 +22,12 @@ class BoothViewSet(viewsets.ModelViewSet):
         queryset = Booth.objects.annotate(waiting_count=Count('waitings'))
         return queryset
     
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # def create(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     if serializer.is_valid():
+    #         serializer.save()
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=False, methods=['get'], url_path='count')
     def get_booth_count(self, request):
