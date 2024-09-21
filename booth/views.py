@@ -6,8 +6,11 @@ from rest_framework.filters import OrderingFilter
 from .models import Booth
 from .serializers import BoothListSerializer, BoothDetailSerializer
 from rest_framework import viewsets, mixins
+from utils.mixins import CustomResponseMixin
+from utils.responses import custom_response
+from utils.exceptions import *
 
-class BoothViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.ListModelMixin):
+class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.ListModelMixin):
     queryset = Booth.objects.all()
     filter_backends = [OrderingFilter]
     ordering_fields = ['name', 'waiting_count']
@@ -32,4 +35,15 @@ class BoothViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.Li
     @action(detail=False, methods=['get'], url_path='count')
     def get_booth_count(self, request):
         booth_count = Booth.objects.count()
-        return Response({'booth_count': booth_count}, status=status.HTTP_200_OK)
+        return custom_response({'booth_count': booth_count}, message='Booth count fetched successfully')
+    
+    # 에러 띄우기 위한 함수
+    @action(detail=False, methods=['get'], url_path='error')
+    def error(self, request):
+        raise ResourceNotFound()
+    
+    # 에러 띄우기 위한 함수 mk2
+    @action(detail=False, methods=['get'], url_path='error2')
+    def error2(self, request):
+        raise CustomException()
+        return custom_response(data=None, message='This should not be reached', code=200, success=True)
