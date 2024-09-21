@@ -1,5 +1,10 @@
 FROM python:3.12-slim
 
+RUN apt-get update && apt-get install -y \
+    gcc \
+    default-libmysqlclient-dev \
+    pkg-config
+
 WORKDIR /app
 
 COPY ./requirements.txt /app/requirements.txt
@@ -11,4 +16,4 @@ COPY . /app
 
 RUN python manage.py collectstatic --noinput
 
-CMD ["gunicorn", "your_project_name.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "linenow.wsgi:application", "--bind", "0.0.0.0:8000"]
