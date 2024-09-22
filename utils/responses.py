@@ -7,7 +7,7 @@ def custom_response(data=None, message='Success', code=status.HTTP_200_OK, succe
     - data: 실제 응답 데이터
     - message: 응답 메시지
     - code: HTTP 상태 코드
-    - success: 성공 여부 (True면 'success', False면 'error')
+    - status: 성공 여부 (True면 'success', False면 'error')
     """
     response = {
         'status': 'success' if success else 'error',
