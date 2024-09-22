@@ -22,6 +22,7 @@ services:
     command: gunicorn linenow.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - .:/app
+      - ./staticfiles:/app/staticfiles   # 정적 파일 공유
     depends_on:
       - db
     networks:
@@ -39,6 +40,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./staticfiles:/app/staticfiles   # Nginx에서 정적 파일 접근 가능
     depends_on:
       - web
     networks:
