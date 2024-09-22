@@ -11,6 +11,22 @@ jobs:
   CI:
     runs-on: ubuntu-latest
 
+    services:
+      db:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.DATABASE_USER_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.DATABASE_NAME }}
+          MYSQL_USER: ${{ secrets.DATABASE_USER }}
+          MYSQL_PASSWORD: ${{ secrets.DATABASE_USER_PASSWORD }}
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -24,12 +40,8 @@ jobs:
         echo "DATABASE_NAME=${{ secrets.DATABASE_NAME }}" >> .env
         echo "DATABASE_USER=${{ secrets.DATABASE_USER }}" >> .env
         echo "DATABASE_USER_PASSWORD=${{ secrets.DATABASE_USER_PASSWORD }}" >> .env
-        echo "DATABASE_HOST=${{ secrets.DATABASE_HOST }}" >> .env
-        echo "DATABASE_PORT=${{ secrets.DATABASE_PORT }}" >> .env
-        echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-        echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-        echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+        echo "DATABASE_HOST=127.0.0.1" >> .env  # DB는 로컬에서 실행됨
+        echo "DATABASE_PORT=3306" >> .env
         cat .env
 
     - name: Set up Python 3.12
