@@ -82,6 +82,10 @@ jobs:
         file: ./Dockerfile
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPONAME }}:latest
+        build-args:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DEBUG: ${{ secrets.DEBUG }}
+          DJANGO_DEPLOY: ${{ secrets.DJANGO_DEPLOY }}
 
   deploy:
     needs: build_and_push
