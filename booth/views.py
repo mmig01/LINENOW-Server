@@ -48,4 +48,14 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
     # 에러 띄우기 위한 함수 mk2
     @action(detail=False, methods=['get'], url_path='error2')
     def error2(self, request):
-        raise CustomException('This should not be reached')
+        return custom_response(data=None, message='This should not be reached', code=200, success=True)
+
+    # 부스별 대기 팀 수 조회 API
+    @action(detail=False, methods=['get'], url_path='waiting-count')
+    def booth_waiting_count(self, request):
+        booths = Booth.objects.annotate(waiting_count=Count('waitings'))
+        data = [
+            {"booth_name": booth.name, "waiting_count": booth.waiting_count}
+            for booth in booths
+        ]
+        return custom_response(data=data, message="Booth waiting counts fetched successfully", code=status.HTTP_200_OK)
