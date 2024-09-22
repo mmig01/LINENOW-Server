@@ -35,7 +35,7 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -77,6 +77,7 @@ REST_FRAMEWORK = {
         "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
+    'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
 }
 
 REST_AUTH = {
@@ -139,12 +140,29 @@ WSGI_APPLICATION = 'linenow.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+IS_DEPLOY = env('DJANGO_DEPLOY')
+
+# 데이터베이스 설정
+if IS_DEPLOY:
+    # 배포 환경: MySQL 사용
+    DATABASES = {
+        'default': {
+            'ENGINE': env('DATABASE_ENGINE'),
+            'NAME': env('DATABASE_NAME'),
+            'USER': env('DATABASE_USER'),
+            'PASSWORD': env('DATABASE_USER_PASSWORD'),
+            'HOST': env('DATABASE_HOST'),
+            'PORT': env('DATABASE_PORT')
+        }
     }
-}
+else:
+    # 개발 환경: SQLite3 사용 (기본값)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
 
 
 # Password validation
@@ -180,8 +198,11 @@ USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
+# STATIC_ROOT 설정
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# STATIC_URL 설정
+STATIC_URL = '/static/'
 
-STATIC_URL = 'static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
