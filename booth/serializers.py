@@ -6,12 +6,8 @@ class BoothMenuSerializer(serializers.ModelSerializer):
     class Meta:
         model = BoothMenu
         fields = ['name', 'price']
-        
-    def get_price(self, obj):
-        return f'{int(obj.price):,}원'
 
 class BoothListSerializer(serializers.ModelSerializer):
-    menu = serializers.SerializerMethodField()
     thumbnail = serializers.SerializerMethodField()
     waiting_count = serializers.SerializerMethodField()
     # 사용자 대기 관련
@@ -20,13 +16,7 @@ class BoothListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booth
-        fields = ['id', 'name', 'description', 'location', 'is_operated', 'thumbnail', 'menu', 'open_time', 'close_time', 'waiting_count', 'is_waiting', 'waiting_status']
-
-    def get_menu(self, obj):
-        menus = obj.menus.all()
-        if menus:
-            return [f'{menu.name}: {int(menu.price):,}원' for menu in menus]
-        return []
+        fields = ['id', 'name', 'description', 'location', 'is_operated', 'thumbnail', 'waiting_count', 'is_waiting', 'waiting_status']
 
     def get_thumbnail(self, obj):
         # 첫 번째 이미지가 썸네일 ! !
@@ -43,6 +33,9 @@ class BoothListSerializer(serializers.ModelSerializer):
         if thumbnail and request:
             return request.build_absolute_uri(thumbnail.image.url)
         return ''
+    
+    def get_waiting_count(self, obj):
+        return obj.waitings.count()
 
     # 사용자 대기 관련 
     def get_is_waiting(self, obj):
@@ -59,16 +52,13 @@ class BoothListSerializer(serializers.ModelSerializer):
                 return waiting.waiting_status
         return None
     
-    def get_waiting_count(self, obj):
-        return obj.waitings.count()
-    
 class BoothImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = BoothImage
         fields = ['image']
 
 class BoothDetailSerializer(serializers.ModelSerializer):
-    menu = serializers.SerializerMethodField()
+    menu = BoothMenuSerializer(many=True, source='menus')
     images = BoothImageSerializer(source='boothimages', many=True)
     waiting_count = serializers.SerializerMethodField()
     # 사용자 대기 관련
@@ -79,12 +69,9 @@ class BoothDetailSerializer(serializers.ModelSerializer):
         model = Booth
         fields = ['id', 'name', 'description', 'location', 'is_operated', 'images', 'menu', 'open_time', 'close_time', 'waiting_count', 'is_waiting', 'waiting_status']
 
-    def get_menu(self, obj):
-        menus = obj.menus.all()
-        if menus:
-            return [f'{menu.name}: {int(menu.price):,}원' for menu in menus]
-        return []
-
+    def get_waiting_count(self, obj):
+        return obj.waitings.count()
+    
     # 사용자 대기 관련
     def get_is_waiting(self, obj):
         request = self.context.get('request')
@@ -99,6 +86,3 @@ class BoothDetailSerializer(serializers.ModelSerializer):
             if waiting:
                 return waiting.waiting_status
         return None
-    
-    def get_waiting_count(self, obj):
-        return obj.waitings.count()

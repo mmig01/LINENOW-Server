@@ -21,11 +21,6 @@ jobs:
           MYSQL_PASSWORD: ${{ secrets.DATABASE_USER_PASSWORD }}
         ports:
           - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
 
     steps:
     - name: Checkout code
@@ -56,6 +51,7 @@ jobs:
 
     - name: Run migrations and tests
       run: |
+        cat .env
         python manage.py makemigrations
         python manage.py migrate
         python manage.py test
