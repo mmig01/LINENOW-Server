@@ -50,12 +50,12 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
     def error2(self, request):
         return custom_response(data=None, message='This should not be reached', code=200, success=True)
 
-    # 부스별 대기 팀 수 조회 API
-    @action(detail=False, methods=['get'], url_path='waiting-count')
-    def booth_waiting_count(self, request):
-        booths = Booth.objects.annotate(waiting_count=Count('waitings'))
-        data = [
-            {"booth_name": booth.name, "waiting_count": booth.waiting_count}
-            for booth in booths
-        ]
-        return custom_response(data=data, message="Booth waiting counts fetched successfully", code=status.HTTP_200_OK)
+    # 부스별 대기 팀 수 조회 API -> 필요 없어서 주석 처리 !!
+    # @action(detail=False, methods=['get'], url_path='waiting-count')
+    # def booth_waiting_count(self, request):
+    #     booths = Booth.objects.annotate(waiting_count=Count('waitings'))
+    #     data = [
+    #         {"booth_name": booth.name, "waiting_count": booth.waiting_count}
+    #         for booth in booths
+    #     ]
+    #     return custom_response(data=data, message="Booth waiting counts fetched successfully", code=status.HTTP_200_OK)
