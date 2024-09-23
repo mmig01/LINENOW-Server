@@ -17,8 +17,5 @@ RUN pip install -r /app/requirements.txt
 # 프로젝트 전체 복사
 COPY . /app
 
-# 정적 파일 수집
-RUN python manage.py collectstatic --noinput
-
 # makemigrations, migrate 실행 후 Gunicorn 시작
 CMD ["sh", "-c", "python manage.py makemigrations --noinput && python manage.py migrate --noinput && gunicorn linenow.wsgi:application --bind 0.0.0.0:8000"]
