@@ -36,6 +36,8 @@ def custom_exception_handler(exc, context):
     if response is not None:
         message = response.data.get('detail', 'An error occurred.')
         code = response.status_code
-        return custom_response(data=None, message=message, code=code, success=False)
+        error_type = exc.__class__.__name__  # 에러 타입 가져오기 ..
+
+        return custom_response(data=None, message=f'{error_type}: {message}', code=code, success=False)
     
     return custom_response(data=None, message='Unhandled server error occurred.', code=500, success=False)

@@ -31,19 +31,31 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
     #         serializer.save()
     #         return Response(serializer.data, status=status.HTTP_201_CREATED)
     #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        
     @action(detail=False, methods=['get'], url_path='count')
     def get_booth_count(self, request):
-        booth_count = Booth.objects.count()
-        return custom_response({'booth_count': booth_count}, message='Booth count fetched successfully')
+        try:
+            booth_count = Booth.objects.count()
+            return custom_response({'booth_count': booth_count}, message='Booth count fetched successfully')
+        except Exception as e:
+            return custom_response(data=None, message=str(e), code=status.HTTP_500_INTERNAL_SERVER_ERROR, success=False)
     
     # 에러 띄우기 위한 함수
     @action(detail=False, methods=['get'], url_path='error')
     def error(self, request):
-        raise ResourceNotFound()
+        raise ResourceNotFound('This booth does not exist.')
     
     # 에러 띄우기 위한 함수 mk2
     @action(detail=False, methods=['get'], url_path='error2')
     def error2(self, request):
-        raise CustomException()
         return custom_response(data=None, message='This should not be reached', code=200, success=True)
+
+    # 부스별 대기 팀 수 조회 API
+    @action(detail=False, methods=['get'], url_path='waiting-count')
+    def booth_waiting_count(self, request):
+        booths = Booth.objects.annotate(waiting_count=Count('waitings'))
+        data = [
+            {"booth_name": booth.name, "waiting_count": booth.waiting_count}
+            for booth in booths
+        ]
+        return custom_response(data=data, message="Booth waiting counts fetched successfully", code=status.HTTP_200_OK)
