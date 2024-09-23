@@ -17,6 +17,9 @@ RUN pip install -r /app/requirements.txt
 # 프로젝트 전체 복사
 COPY . /app
 
+# .env 파일 복사
+COPY .env /app/.env
+
 # 정적 파일 수집
 RUN python manage.py collectstatic --noinput
 
