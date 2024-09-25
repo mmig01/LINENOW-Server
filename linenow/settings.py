@@ -182,8 +182,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Celery 관련 설정
-CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis 브로커 주소
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'  # 결과 백엔드
+CELERY_BROKER_URL = env('CELERY_BROKER_URL')  # Redis 브로커 주소
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')  # 결과 백엔드
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
