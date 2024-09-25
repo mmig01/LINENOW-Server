@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'accounts',
     'booth',
     'waiting',
+    'manager',
 ]
 
 SITE_ID = 1
