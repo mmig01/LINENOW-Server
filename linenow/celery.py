@@ -17,3 +17,6 @@ app.autodiscover_tasks()
 @app.task(bind=True)
 def debug_task(self):
     print(f'Request: {self.request!r}')
+
+# Celery 관련 설정
+app.conf.broker_connection_retry_on_startup = True  # 브로커 연결 재시도 활성화
