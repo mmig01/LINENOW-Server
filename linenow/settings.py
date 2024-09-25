@@ -33,7 +33,7 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -63,11 +63,15 @@ INSTALLED_APPS = [
     'manager',
 ]
 
+SITE_ID = 1
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        "rest_framework.authentication.TokenAuthentication",
         "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
+    'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
 }
 
 MIDDLEWARE = [
@@ -105,12 +109,29 @@ WSGI_APPLICATION = 'linenow.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+IS_DEPLOY = env('DJANGO_DEPLOY')
+
+# 데이터베이스 설정
+if IS_DEPLOY == 'True':
+    # 배포 환경: MySQL 사용
+    DATABASES = {
+        'default': {
+            'ENGINE': env('DATABASE_ENGINE'),
+            'NAME': env('DATABASE_NAME'),
+            'USER': env('DATABASE_USER'),
+            'PASSWORD': env('DATABASE_USER_PASSWORD'),
+            'HOST': env('DATABASE_HOST'),
+            'PORT': env('DATABASE_PORT')
+        }
     }
-}
+else:
+    # 개발 환경: SQLite3 사용 (기본값)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
 
 
 # Password validation
@@ -146,8 +167,11 @@ USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
+# STATIC_ROOT 설정
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# STATIC_URL 설정
+STATIC_URL = '/static/'
 
-STATIC_URL = 'static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -156,3 +180,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Celery 관련 설정
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis 브로커 주소
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'  # 결과 백엔드
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
