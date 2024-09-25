@@ -34,6 +34,8 @@ services:
     environment:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+    restart: on-failure
+    user: "1000:1000"  # 비루트 사용자로 실행
 
   web:
     build: .
