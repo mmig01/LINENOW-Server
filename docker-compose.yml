@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: mysql:8.0
@@ -15,6 +13,29 @@ services:
       - "3306:3306"
     networks:
       - app-network
+
+  redis:
+    image: redis:6.0
+    container_name: linenow-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+  celery:
+    build: .
+    container_name: linenow-celery
+    command: celery -A linenow worker --loglevel=info
+    depends_on:
+      - redis
+      - db
+    networks:
+      - app-network
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+    restart: on-failure
+    user: "1000:1000"  # 비루트 사용자로 실행
 
   web:
     build: .
