@@ -27,7 +27,7 @@ def kakao_callback(request):
     error = token_req_json.get("error", None)
     
     if error is not None:
-        raise InvalidToken("Failed to retrieve token.")
+        raise InvalidToken("The access token from Kakao was invalid.")
 
     kakao_access_token = token_req_json.get("access_token")
     
