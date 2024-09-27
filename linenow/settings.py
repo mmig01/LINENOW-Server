@@ -71,6 +71,8 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = True
 ACCOUNT_AUTHENTICATION_METHOD = "username"
 
+ACCOUNT_EMAIL_VERIFICATION = "none"
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         "rest_framework.authentication.TokenAuthentication",
@@ -86,7 +88,7 @@ REST_AUTH = {
     'JWT_AUTH_HTTPONLY': True,
     'JWT_AUTH_REFRESH_COOKIE' : "refresh_token",
     'JWT_AUTH_SAMESITE': 'Lax',
-    'JWT_AUTH_COOKIE_USE_CSRF' : False,
+    'JWT_AUTH_COOKIE_USE_CSRF' : True,
     'SESSION_LOGIN' : False
 }
 
@@ -219,6 +221,7 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
+# 카카오 로그인 관련 설정
 SOCIALACCOUNT_PROVIDERS = {
     'kakao': {
         'APP': {
@@ -228,3 +231,6 @@ SOCIALACCOUNT_PROVIDERS = {
         }
     }
 }
+KAKAO_CLIENT_ID = env("KAKAO_CLIENT_ID")
+KAKAO_CALLBACK_URI = env("KAKAO_CALLBACK_URI")
+BACK_BASE_URL = env("BACK_BASE_URL")
