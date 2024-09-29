@@ -77,7 +77,6 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         "rest_framework.authentication.TokenAuthentication",
-        "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
     'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
@@ -91,11 +90,6 @@ REST_AUTH = {
     'JWT_AUTH_SAMESITE': 'Lax',
     'JWT_AUTH_COOKIE_USE_CSRF' : True,
     'SESSION_LOGIN' : False
-}
-
-# 유저 회원가입
-REST_AUTH_REGISTER_SERIALIZERS = {
-    "REGISTER_SERIALIZER": "accounts.serializers.CustomUserRegisterSerializer"
 }
 
 REST_USE_JWT = True

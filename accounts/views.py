@@ -31,65 +31,27 @@ def kakao_callback(request):
 
     kakao_access_token = token_req_json.get("access_token")
     
-    # 프로필 정보 요청
-    profile_request = requests.get("https://kapi.kakao.com/v2/user/me", headers={"Authorization": f"Bearer {kakao_access_token}"})
-    profile_json = profile_request.json()
-    
-    kakao_account = profile_json.get('kakao_account')
-    email = kakao_account.get('email', None)
-    
-    try:
-        user = User.objects.get(email=email)
-        
-        # 기존에 kakao로 가입된 유저
-        data = {"access_token": kakao_access_token, "code": code}
-        accept = requests.post(f"{BACK_BASE_URL}api/v1/accounts/kakao/login/finish/", data=data)
-        accept_status = accept.status_code
-        
+    # 로그인 또는 회원가입 처리
+    data = {"access_token": kakao_access_token, "code": code}
+    accept = requests.post(f"{BACK_BASE_URL}api/v1/accounts/kakao/login/finish/", data=data)
 
-        if accept_status != 200:
-            return InvalidToken("Login Failed.")
+    if accept.status_code != 200:
+        raise InvalidToken("Authentication Failed.")
 
-        accept_json = accept.json()
+    accept_json = accept.json()
+    access_token = accept_json['access']
+    refresh_token = accept.cookies.get('refresh_token')
 
-        # refresh_token을 headers 문자열에서 추출
-        refresh_token = accept.cookies.get('refresh_token')
-        if not refresh_token:
-            raise InvalidToken("Failed to retrieve refresh token.")
-        
-        access_token = accept_json['access']
-        
-        data = {
-            "access_token": access_token,
-            "refresh_token": refresh_token
-        }
+    if not refresh_token:
+        raise InvalidToken("Failed to retrieve refresh token.")
 
-        return custom_response(data=data, message="Login successful.", code=status.HTTP_200_OK)
-    
-    except User.DoesNotExist:
+    data = {
+        "access_token": access_token,
+        "refresh_token": refresh_token
+    }
+
+    return custom_response(data=data, message="Login successful.", code=status.HTTP_200_OK)
         
-        # 기존에 가입된 유저가 없으면 새로 가입
-        data = {"access_token": kakao_access_token, "code": code}
-        accept = requests.post(f"{BACK_BASE_URL}api/v1/accounts/kakao/login/finish/", data=data)
-        accept_status = accept.status_code
-        
-        if accept_status != 200:
-            return InvalidToken("Signup Failed.")
-    
-        accept_json = accept.json()
-        tokens = requests.post(f"{BACK_BASE_URL}api/v1/dj-rest-auth/registration/", data=data)
-        
-        # refresh_token을 headers 문자열에서 추출
-        refresh_token = accept.cookies.get('refresh_token')
-        if not refresh_token:
-            raise InvalidToken("Failed to retrieve refresh token.")
-        
-        data = {
-            "access_token": access_token,
-            "refresh_token":refresh_token,
-        }
-        return custom_response(data=data, message="Signup successful.", code=status.HTTP_200_OK)
-    
 class KakaoLogin(SocialLoginView):
     adapter_class = kakao_view.KakaoOAuth2Adapter
     client_class = OAuth2Client
