@@ -209,6 +209,22 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# corsheaders
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = [
+    # 로컬 개발용 주소
+    'http://localhost:3000', 
+    'http://localhost:5173', 
+    'http://127.0.0.1:3000', 
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:8000',
+
+    # 프론트엔드 도메인 또는 IP주소
+    ''
+]
+
 # Celery 관련 설정
 CELERY_BROKER_URL = env('CELERY_BROKER_URL')  # Redis 브로커 주소
 CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')  # 결과 백엔드 주소
