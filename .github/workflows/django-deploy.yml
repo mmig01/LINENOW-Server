@@ -42,7 +42,7 @@ jobs:
         echo "KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}" >> .env
         echo "KAKAO_CALLBACK_URI=${{ secrets.KAKAO_CALLBACK_URI }}" >> .env
         echo "BACK_BASE_URL=${{ secrets.BACK_BASE_URL }}" >> .env
-        
+        echo "KAKAO_SECRET=${{ secrets.KAKAO_SECRET }}" >> .env
         cat .env
 
     - name: Set up Python 3.12
