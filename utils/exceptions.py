@@ -24,6 +24,11 @@ class CustomException(APIException):
     default_detail = 'I hate exceptions :('
     default_code = 'custom_exception' 
 
+#커스텀 토근 오류 클래스
+class InvalidToken(APIException):
+    status_code = 401
+    default_detail = 'The token was invalid.'
+    default_code = 'invalid_token' 
 
 # 커스텀 예외 핸들러
 def custom_exception_handler(exc, context):

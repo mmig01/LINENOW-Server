@@ -15,6 +15,8 @@ import environ
 
 from pathlib import Path
 
+from datetime import timedelta
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -65,13 +67,39 @@ INSTALLED_APPS = [
 
 SITE_ID = 1
 
+ACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = "username"
+
+ACCOUNT_EMAIL_VERIFICATION = "none"
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         "rest_framework.authentication.TokenAuthentication",
-        "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
     'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
+}
+
+REST_AUTH = {
+    'USE_JWT' : True,
+    'JWT_AUTH_COOKIE' : 'access_token',
+    'JWT_AUTH_HTTPONLY': True,
+    'JWT_AUTH_REFRESH_COOKIE' : "refresh_token",
+    'JWT_AUTH_SAMESITE': 'Lax',
+    'JWT_AUTH_COOKIE_USE_CSRF' : True,
+    'SESSION_LOGIN' : False
+}
+
+REST_USE_JWT = True
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'TOKEN_USER_CLASS': "django.contrib.auth.models.User",
 }
 
 MIDDLEWARE = [
@@ -188,3 +216,17 @@ CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')  # 결과 백엔드 주소
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+
+# 카카오 로그인 관련 설정
+SOCIALACCOUNT_PROVIDERS = {
+    'kakao': {
+        'APP': {
+            'client_id': env('KAKAO_CLIENT_ID'),
+            'secret': env('KAKAO_SECRET'),
+            'key': ''
+        }
+    }
+}
+KAKAO_CLIENT_ID = env("KAKAO_CLIENT_ID")
+KAKAO_CALLBACK_URI = env("KAKAO_CALLBACK_URI")
+BACK_BASE_URL = env("BACK_BASE_URL")
