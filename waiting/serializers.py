@@ -7,10 +7,19 @@ from django.utils import timezone
 # 나의 대기에서 부스 정보 확인용 !! - 아래의 시리얼라이저에서 사용됨 !!
 class BoothSerializer(serializers.ModelSerializer):
     booth_id = serializers.IntegerField(source='id')
+    thumbnail = serializers.SerializerMethodField()
     
     class Meta:
         model = Booth
-        fields = ['booth_id', 'name', 'description', 'location']
+        fields = ['booth_id', 'name', 'description', 'location', 'thumbnail']
+    
+    def get_thumbnail(self, obj):
+        # 부스 첫 번째 이미지가 썸네일로 사용됨
+        request = self.context.get('request')
+        thumbnail = obj.boothimages.first()
+        if thumbnail and request:
+            return request.build_absolute_uri(thumbnail.image.url)
+        return ''
 
 # 나의 웨이팅 리스트
 class WaitingSerializer(serializers.ModelSerializer):
