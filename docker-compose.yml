@@ -42,7 +42,6 @@ services:
     container_name: linenow-was
     command: gunicorn linenow.wsgi:application --bind 0.0.0.0:8000
     volumes:
-      - .:/app
       - ./staticfiles:/app/staticfiles   # 정적 파일 공유
     depends_on:
       - db
