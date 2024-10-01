@@ -95,14 +95,13 @@ class WaitingDetailSerializer(serializers.ModelSerializer):
 
 # 웨이팅 등록 관련 시리얼라이저
 class WaitingCreateSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True)
     username = serializers.CharField(source='user.username', read_only=True)  # 유저 이름 추가 - 카카오 로그인 연결 후 변경될 듯
     registered_at = serializers.DateTimeField(read_only=True)  # 대기 등록 시간 필드 추가
     booth = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Waiting
-        fields = ['id', 'user', 'booth', 'username', 'party_size', 'waiting_status', 'registered_at', 'ready_to_confirm_at', 'confirmed_at', 'canceled_at']
+        fields = ['id', 'booth', 'username', 'party_size', 'waiting_status', 'registered_at', 'ready_to_confirm_at', 'confirmed_at', 'canceled_at']
         read_only_fields = ['waiting_status', 'registered_at', 'ready_to_confirm_at', 'confirmed_at', 'canceled_at']
 
     def create(self, validated_data):
