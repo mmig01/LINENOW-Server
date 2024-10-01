@@ -104,7 +104,7 @@ jobs:
           
           docker-compose down
           docker-compose pull
-          docker-compose up -d
+          docker-compose up --build -d
 
     - name: Collect static files
       uses: appleboy/ssh-action@v1.0.0
