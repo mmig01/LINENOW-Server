@@ -100,6 +100,8 @@ jobs:
         port: ${{ secrets.SSH_PORT }}
         script: |
           cd /root/linenow-dev
+          git pull origin main
+          
           docker-compose down
           docker-compose pull
           docker-compose up -d
