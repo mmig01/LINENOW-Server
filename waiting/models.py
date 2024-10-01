@@ -12,6 +12,7 @@ class Waiting(models.Model):
         ('confirmed', '입장 확정'),
         ('arrived', '입장 완료'),
         ('canceled', '대기 취소'),
+        ('time_over_canceled', '시간 초과로 취소'),
     ]
     
     id = models.AutoField(primary_key=True)
@@ -46,6 +47,12 @@ class Waiting(models.Model):
         self.save()
         # 10분 후 상태 확인 작업 호출
         check_confirmed.apply_async((self.id,), countdown=600)
+        
+    def set_time_over_canceled(self):
+        """3분 내에 입장 확정하지 않을 시 시간 초과로 인한 대기 취소"""
+        self.waiting_status = 'time_over_canceled'
+        self.canceled_at = timezone.now()
+        self.save()
 
     def set_canceled(self):
         """대기 취소 상태로 변경"""
