@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from utils.mixins import CustomResponseMixin
 from utils.exceptions import ResourceNotFound, CustomException
 from utils.responses import custom_response
+from django.db.models import Q
 
 
 class WaitingViewSet(viewsets.GenericViewSet):
@@ -41,10 +42,22 @@ class WaitingViewSet(viewsets.GenericViewSet):
     @action(detail=True, methods=['post'], url_path='register')
     def register_waiting(self, request, pk=None):
         booth = get_object_or_404(Booth, pk=pk)
+        user = request.user
+        
+        # 사용자가 이미 해당 부스에 대기 중인 상태인지 확인
+        existing_waiting = Waiting.objects.filter(
+            user=user,
+            booth=booth,
+            waiting_status='waiting'  # waiting 상태인 경우만 체크
+        ).exists()
+
+        if existing_waiting:
+            return custom_response(data=None, message="You already have a waiting for this booth. 욕심쥉이~", code=status.HTTP_400_BAD_REQUEST, success=False)
+        
+        # 대기가 없을 경우 새로운 대기 생성
         serializer = self.get_serializer(data=request.data, context={'request': request})
 
         if serializer.is_valid():
-            user = request.user
             if not isinstance(user, User):
                 try:
                     user = User.objects.get(pk=user.pk)
