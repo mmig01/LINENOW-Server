@@ -44,6 +44,10 @@ class WaitingViewSet(viewsets.GenericViewSet):
         booth = get_object_or_404(Booth, pk=pk)
         user = request.user
         
+        # 부스 상태 확인
+        if booth.is_operated != 'operating':
+            return custom_response(data=None, message="This booth is not currently operating.", code=status.HTTP_400_BAD_REQUEST, success=False)
+        
         # 사용자가 이미 해당 부스에 대기 중인 상태인지 확인
         existing_waiting = Waiting.objects.filter(
             user=user,
