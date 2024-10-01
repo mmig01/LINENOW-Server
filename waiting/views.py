@@ -92,7 +92,7 @@ class WaitingViewSet(viewsets.GenericViewSet):
         return custom_response(message="Unable to confirm waiting in current status.", code=status.HTTP_400_BAD_REQUEST, success=False)
 
     # 현재 '대기 중'인 목록만 반환하는 API
-    @action(detail=False, methods=['get'], url_path='now-waiting')
+    @action(detail=False, methods=['get'], url_path='now-waitings')
     def waiting_list(self, request):
         user = request.user
         queryset = Waiting.objects.filter(user=user, waiting_status='waiting')

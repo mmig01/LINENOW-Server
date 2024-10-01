@@ -7,10 +7,19 @@ from django.utils import timezone
 # 나의 대기에서 부스 정보 확인용 !! - 아래의 시리얼라이저에서 사용됨 !!
 class BoothSerializer(serializers.ModelSerializer):
     booth_id = serializers.IntegerField(source='id')
+    thumbnail = serializers.SerializerMethodField()
     
     class Meta:
         model = Booth
-        fields = ['booth_id', 'name', 'description', 'location']
+        fields = ['booth_id', 'name', 'description', 'location', 'thumbnail']
+    
+    def get_thumbnail(self, obj):
+        # 부스 첫 번째 이미지가 썸네일로 사용됨
+        request = self.context.get('request')
+        thumbnail = obj.boothimages.first()
+        if thumbnail and request:
+            return request.build_absolute_uri(thumbnail.image.url)
+        return ''
 
 # 나의 웨이팅 리스트
 class WaitingSerializer(serializers.ModelSerializer):
@@ -86,14 +95,13 @@ class WaitingDetailSerializer(serializers.ModelSerializer):
 
 # 웨이팅 등록 관련 시리얼라이저
 class WaitingCreateSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True)
     username = serializers.CharField(source='user.username', read_only=True)  # 유저 이름 추가 - 카카오 로그인 연결 후 변경될 듯
     registered_at = serializers.DateTimeField(read_only=True)  # 대기 등록 시간 필드 추가
     booth = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Waiting
-        fields = ['id', 'user', 'booth', 'username', 'party_size', 'waiting_status', 'registered_at', 'ready_to_confirm_at', 'confirmed_at', 'canceled_at']
+        fields = ['id', 'booth', 'username', 'party_size', 'waiting_status', 'registered_at', 'ready_to_confirm_at', 'confirmed_at', 'canceled_at']
         read_only_fields = ['waiting_status', 'registered_at', 'ready_to_confirm_at', 'confirmed_at', 'canceled_at']
 
     def create(self, validated_data):
