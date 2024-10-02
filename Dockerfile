@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
     pkg-config
+    python3-certbot-nginx
 
 # 작업 디렉토리 설정
 WORKDIR /app
@@ -18,4 +19,4 @@ RUN pip install -r /app/requirements.txt
 COPY . /app
 
 # makemigrations, migrate 실행 후 Gunicorn 시작
-CMD ["sh", "-c", "python manage.py makemigrations --noinput && python manage.py migrate --noinput && gunicorn linenow.wsgi:application --bind 0.0.0.0:8000"]
+CMD ["sh", "-c", "python manage.py makemigrations --noinput && python manage.py migrate --noinput && certbot certonly --nginx -d linenow.xyz && gunicorn linenow.wsgi:application --bind 0.0.0.0:8000"]

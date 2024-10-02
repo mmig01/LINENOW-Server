@@ -34,11 +34,11 @@ def kakao_callback(request):
     # 로그인 또는 회원가입 처리
     data = {"access_token": kakao_access_token, "code": code}
     accept = requests.post(f"{BACK_BASE_URL}api/v1/accounts/kakao/login/finish/", data=data)
-
     if accept.status_code != 200:
         raise InvalidToken("Authentication Failed.")
 
     accept_json = accept.json()
+    user = accept_json.get('user')
     access_token = accept_json['access']
     refresh_token = accept.cookies.get('refresh_token')
 
@@ -47,7 +47,8 @@ def kakao_callback(request):
 
     data = {
         "access_token": access_token,
-        "refresh_token": refresh_token
+        "refresh_token": refresh_token,
+        "user":user
     }
 
     return custom_response(data=data, message="Login successful.", code=status.HTTP_200_OK)
