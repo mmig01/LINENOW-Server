@@ -6,6 +6,10 @@ RUN apt-get update && apt-get install -y \
     default-libmysqlclient-dev \
     pkg-config
 
+    # certbot으로 SSL 인증서 발급
+    apt-get install python3-certbot-nginx
+    certbot certonly --nginx -d linenow.xyz
+
 # 작업 디렉토리 설정
 WORKDIR /app
 
