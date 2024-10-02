@@ -67,7 +67,7 @@ class BoothDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booth
-        fields = ['id', 'name', 'description', 'location', 'is_operated', 'images', 'menu', 'open_time', 'close_time', 'waiting_count', 'is_waiting', 'waiting_status']
+        fields = ['id', 'name', 'description', 'location', 'caution', 'is_operated', 'images', 'menu', 'open_time', 'close_time', 'waiting_count', 'is_waiting', 'waiting_status']
 
     def get_waiting_count(self, obj):
         return obj.waitings.count()

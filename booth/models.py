@@ -24,6 +24,7 @@ class Booth(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="booths") 
     name = models.CharField(max_length=100, verbose_name="부스명")
     description = models.TextField(verbose_name="부스 설명")
+    caution = models.TextField(verbose_name="부스 유의사항")
     location = models.CharField(max_length=255, verbose_name="부스 위치")
     is_operated = models.CharField(max_length=100, choices=OPERATED_STATUS, verbose_name="운영 여부")
     open_time = models.DateTimeField(verbose_name="시작 시간")
