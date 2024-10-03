@@ -109,7 +109,6 @@ def kakao_callback(request):
         
         user = User.objects.get(email=email)
         user.name = name
-        user.nickname = nickname
         user.save()
         # Access Token, Refresh token 
         accept_json = accept.json()
