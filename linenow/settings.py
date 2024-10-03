@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.kakao',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     
     'accounts',
     'booth',
@@ -76,8 +77,9 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        "utils.CustomCookieAuthentication.CustomCookieAuthentication",
         "rest_framework.authentication.TokenAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
+        # "rest_framework.authentication.SessionAuthentication",
     ),
     'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
 }
@@ -97,7 +99,7 @@ REST_USE_JWT = True
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
-    'ROTATE_REFRESH_TOKENS': False,
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'TOKEN_USER_CLASS': "django.contrib.auth.models.User",
 }
