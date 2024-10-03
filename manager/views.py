@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from utils.responses import custom_response
+from django.core.exceptions import ObjectDoesNotExist
 
 # FAQ 리스트 조회만 가능한 ViewSet
 class FAQViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -14,7 +15,7 @@ class FAQViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = FAQSerializer
     
     
-# 관리자 로그인 로그아웃
+# 관리자 로그인
 class AdminLoginView(APIView):
     def post(self, request):
         admin_code = request.data.get('admin_code')
@@ -31,6 +32,7 @@ class AdminLoginView(APIView):
         booth_name = admin.booth.name if admin.booth else "No booth assigned"
         return custom_response(data={'booth_name': booth_name}, message=f"Login Success !!! Hi, {booth_name} manager.", code=status.HTTP_200_OK)
 
+# 관리자 로그아웃
 class AdminLogoutView(APIView):
     def post(self, request):
         admin_id = request.session.get('admin_id')
@@ -46,53 +48,59 @@ class AdminLogoutView(APIView):
             return custom_response(data={'booth_name': booth_name}, message=f"Successfully logged out from {booth_name}.", code=status.HTTP_200_OK)
         
         return custom_response(data=None, message="No active session found to log out.", code=status.HTTP_400_BAD_REQUEST, success=False)
-    
+
+# 부스 전체 대기 목록 조회
 class BoothWaitingListView(APIView):
-    def get(self, request, boothid):
-        admin_id = request.session.get('admin_id')  # 세션에서 관리자 ID 가져오기
+    def get(self, request):
+        try:
+            admin_id = request.session.get('admin_id')  # 세션에서 관리자 ID 가져오기
+            
+            if not admin_id:
+                return custom_response(data=None, message="You must be logged in as an admin to view reservations.", code=status.HTTP_403_FORBIDDEN, success=False)
+            
+            admin = get_object_or_404(Admin, id=admin_id)  # 로그인한 관리자 정보
+            booth = admin.booth  # 해당 관리자가 관리하는 부스 정보 가져올 수 있도록 !!
+            
+            # 해당 부스의 모든 대기 정보 조회
+            waitings = Waiting.objects.filter(booth=booth).order_by('created_at')  # 대기 생성 시간 순으로 정렬(오래된 순)
+            serializer = BoothWaitingSerializer(waitings, many=True)
+            
+            return custom_response(data=serializer.data, message="Booth waiting status fetched successfully", code=status.HTTP_200_OK)
         
-        if not admin_id:
-            return custom_response(data=None, message="You must be logged in as an admin to view reservations.", code=status.HTTP_403_FORBIDDEN, success=False)
-        
-        admin = get_object_or_404(Admin, id=admin_id)  # 로그인한 관리자 정보
-        booth = get_object_or_404(Booth, id=boothid)  # 요청된 부스 정보
-        
-        # 관리자가 해당 부스를 관리하는지 확인
-        if admin.booth.id != booth.id:
-            return custom_response(data=None, message="You do not have permission to view this booth's reservations.", code=status.HTTP_403_FORBIDDEN, success=False)
-        
-        # 해당 부스의 모든 대기 정보 조회
-        waitings = Waiting.objects.filter(booth=booth).order_by('created_at')  # 대기 생성 시간 순으로 정렬
-        serializer = BoothWaitingSerializer(waitings, many=True)
-        
-        return custom_response(data=serializer.data, message="Booth waiting status fetched successfully", code=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return custom_response(data=None, message="Admin or booth not found.", code=status.HTTP_404_NOT_FOUND, success=False)
+        except Exception as e:
+            # 모든 다른 예외에 대해서도 500 에러 대신 명확한 메시지를 반환!
+            return custom_response(data=None, message=str(e), code=status.HTTP_500_INTERNAL_SERVER_ERROR, success=False)
+
     
 # 웨이팅 상태별 필터링
 class BoothWaitingStatusFilterView(APIView):
-    def get(self, request, boothid, status_group):
-        admin_id = request.session.get('admin_id')  # 세션에서 관리자 ID 가져오기
-        
-        if not admin_id:
-            return custom_response(data=None, message="You must be logged in as an admin to view reservations.", code=status.HTTP_403_FORBIDDEN, success=False)
-        
-        admin = get_object_or_404(Admin, id=admin_id)  # 로그인한 관리자 정보
-        booth = get_object_or_404(Booth, id=boothid)  # 요청된 부스 정보
-        
-        # 관리자가 해당 부스를 관리하는지 확인
-        if admin.booth.id != booth.id:
-            return custom_response(data=None, message="You do not have permission to view this booth's reservations.", code=status.HTTP_403_FORBIDDEN, success=False)
-        
-        # 상태별 필터링 로직
-        if status_group == 'waiting':
-            waitings = Waiting.objects.filter(booth=booth, waiting_status='waiting').order_by('created_at')
-        elif status_group == 'calling':
-            waitings = Waiting.objects.filter(booth=booth, waiting_status__in=['ready_to_confirm', 'confirmed']).order_by('created_at')
-        elif status_group == 'arrived':
-            waitings = Waiting.objects.filter(booth=booth, waiting_status='arrived').order_by('created_at')
-        elif status_group == 'canceled':
-            waitings = Waiting.objects.filter(booth=booth, waiting_status__in=['canceled', 'time_over_canceled']).order_by('created_at')
-        else:
-            return custom_response(data=None, message="Invalid status group.", code=status.HTTP_400_BAD_REQUEST, success=False)
+    def get(self, request, status_group):
+        try:
+            admin_id = request.session.get('admin_id')  # 세션에서 관리자 ID 가져오기
+            
+            if not admin_id:
+                return custom_response(data=None, message="You must be logged in as an admin to view reservations.", code=status.HTTP_403_FORBIDDEN, success=False)
+            
+            admin = get_object_or_404(Admin, id=admin_id)  # 로그인한 관리자 정보
+            booth = admin.booth
+            
+            # 상태별 필터링 로직
+            if status_group == 'waiting':
+                waitings = Waiting.objects.filter(booth=booth, waiting_status='waiting').order_by('created_at')
+            elif status_group == 'calling':
+                waitings = Waiting.objects.filter(booth=booth, waiting_status__in=['ready_to_confirm', 'confirmed']).order_by('created_at')
+            elif status_group == 'arrived':
+                waitings = Waiting.objects.filter(booth=booth, waiting_status='arrived').order_by('created_at')
+            elif status_group == 'canceled':
+                waitings = Waiting.objects.filter(booth=booth, waiting_status__in=['canceled', 'time_over_canceled']).order_by('created_at')
+            else:
+                return custom_response(data=None, message="Invalid status group.", code=status.HTTP_400_BAD_REQUEST, success=False)
 
-        serializer = BoothWaitingSerializer(waitings, many=True)
-        return custom_response(data=serializer.data, message=f"Booth waiting status ({status_group}) fetched successfully", code=status.HTTP_200_OK)
+            serializer = BoothWaitingSerializer(waitings, many=True)
+            return custom_response(data=serializer.data, message=f"Booth waiting status ({status_group}) fetched successfully", code=status.HTTP_200_OK)
+
+        except Exception as e:
+            # 500 에러 대신 상세한 예외 메시지를 반환!
+            return custom_response(data=None, message=f"An error occurred: {str(e)}", code=status.HTTP_500_INTERNAL_SERVER_ERROR, success=False)
