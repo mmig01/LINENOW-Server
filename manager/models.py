@@ -10,7 +10,7 @@ class FAQ(models.Model):
     question = models.CharField(max_length=100)
     answer = models.TextField()
 
-# Admin 계정, code는 unique하게 설정, name은 후에 부스와 1:1 대응 예정
+# Admin 계정, code는 unique하게 설정, name은 부스와 1:1 대응
 class Admin(models.Model):
     admin_code = models.CharField(max_length=255, unique=True)
     booth = models.OneToOneField(Booth, on_delete=models.CASCADE, related_name='admin')

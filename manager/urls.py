@@ -15,8 +15,8 @@ urlpatterns = [
     path('manager/login', AdminLoginView.as_view(), name='admin_login'),
     path('manager/logout', AdminLogoutView.as_view(), name='admin_logout'),
     
-    path('manager/booths/<int:boothid>/waitings', BoothWaitingListView.as_view(), name='booth_waiting_list'),
+    path('manager/waitings', BoothWaitingListView.as_view(), name='booth_waiting_list'),
 
-    path('manager/booths/<int:boothid>/waitings/status/<str:status_group>/', BoothWaitingStatusFilterView.as_view(), name='booth_waiting_status_filter'),
+    path('manager/waitings/status/<str:status_group>', BoothWaitingStatusFilterView.as_view(), name='booth_waiting_status_filter'),
 
 ]
