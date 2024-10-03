@@ -222,7 +222,10 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:8000',
 
     # 프론트엔드 도메인 또는 IP주소
-    ''
+    
+    # 백엔드 도메인 또는 IP주소
+    'http://211.188.52.202',
+    'http://linenow.xyz'
 ]
 
 # Celery 관련 설정
@@ -233,7 +236,8 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
-# 카카오 로그인 관련 설정
+# 카카오 로그인 관련 설정 (DB 대체)
+"""
 SOCIALACCOUNT_PROVIDERS = {
     'kakao': {
         'APP': {
@@ -243,6 +247,7 @@ SOCIALACCOUNT_PROVIDERS = {
         }
     }
 }
+"""
 KAKAO_CLIENT_ID = env("KAKAO_CLIENT_ID")
 KAKAO_CALLBACK_URI = env("KAKAO_CALLBACK_URI")
 BACK_BASE_URL = env("BACK_BASE_URL")
