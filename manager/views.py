@@ -13,7 +13,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from utils.CustomCookieAuthentication import CustomCookieAuthentication
 
 
 # FAQ 리스트 조회만 가능한 ViewSet
@@ -43,30 +42,27 @@ class AdminLoginView(APIView):
         access_token = str(refresh.access_token)
 
         booth_name = admin.booth.name if admin.booth else "No booth assigned"
-        response = custom_response(data={
+        return custom_response(data={
             'booth_name': booth_name,
             'access_token': access_token,
             'refresh_token': str(refresh)
             }, message=f"Login Success !!! Hi, {booth_name} manager.", code=status.HTTP_200_OK)
         
-        # 쿠키 설정
-        response.set_cookie(
-            key='access_token',
-            value=access_token,
-            httponly=True,  # 자바스크립트로 접근 불가
-            secure=False,    # HTTPS에서만 전송 (개발 환경에서는 False)
-            samesite='Lax'  # 같은 사이트에서만 쿠키 전송 (보안 강화)
-        )
-        response.set_cookie(
-            key='refresh_token',
-            value=str(refresh),
-            httponly=True,
-            secure=True,
-            samesite='Lax'
-        )
-        
-        return response
-
+        # # 쿠키 설정
+        # response.set_cookie(
+        #     key='access_token',
+        #     value=access_token,
+        #     httponly=True,  # 자바스크립트로 접근 불가
+        #     secure=False,    # HTTPS에서만 전송 (개발 환경에서는 False)
+        #     samesite='Lax'  # 같은 사이트에서만 쿠키 전송 (보안 강화)
+        # )
+        # response.set_cookie(
+        #     key='refresh_token',
+        #     value=str(refresh),
+        #     httponly=True,
+        #     secure=True,
+        #     samesite='Lax'
+        # )
 # 관리자 로그아웃
 class AdminLogoutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -87,7 +83,7 @@ class AdminLogoutView(APIView):
         try:
             # JWT 토큰을 통해 현재 로그인한 사용자 가져오기
             # 쿠키 기반 JWT 인증
-            jwt_authenticator = CustomCookieAuthentication()
+            jwt_authenticator = JWTAuthentication()
             result = jwt_authenticator.authenticate(request)
 
             # 인증 실패 시
@@ -104,14 +100,16 @@ class AdminLogoutView(APIView):
             refresh_token = request.data.get('refresh_token')
             if not refresh_token:
                 return custom_response(data=None, message="Refresh token not provided.", code=status.HTTP_400_BAD_REQUEST, success=False)
-            # refresh_token을 통해 토큰 객체 생성
-            token = RefreshToken(refresh_token)
-            token.blacklist()  # refresh 토큰을 블랙리스트 처리
             
-            response = custom_response(data={'booth_name': booth_name}, message="Successfully logged out from {booth_name}", code=status.HTTP_200_OK)
-            response.delete_cookie('access_token')
-            response.delete_cookie('refresh_token')
-            return response
+            # refresh_token을 블랙리스트 처리
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()  # refresh 토큰을 블랙리스트에 추가하여 무효화
+            except Exception as e:
+                return custom_response(data=None, message="Invalid refresh token.", code=status.HTTP_400_BAD_REQUEST, success=False)
+            
+            return custom_response(data={'booth_name': booth_name}, message="Successfully logged out from {booth_name}", code=status.HTTP_200_OK)
+        
         except Exception as e:
             return custom_response(data=None, message=str(e), code=status.HTTP_400_BAD_REQUEST, success=False)
 
