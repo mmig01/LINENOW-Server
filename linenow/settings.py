@@ -224,8 +224,8 @@ CORS_ALLOWED_ORIGINS = [
     # 프론트엔드 도메인 또는 IP주소
     
     # 백엔드 도메인 또는 IP주소
-    'http://211.188.52.202',
-    'http://linenow.xyz'
+    'https://211.188.52.202',
+    'https://linenow.xyz'
 ]
 
 # Celery 관련 설정
