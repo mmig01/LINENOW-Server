@@ -1,4 +1,4 @@
-from rest_framework import mixins, viewsets
+from rest_framework import mixins, viewsets, filters
 from rest_framework.response import Response
 from .models import *
 from .serializers import *
@@ -13,7 +13,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-
+from utils.mixins import CustomResponseMixin
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import WaitingFilter
+from rest_framework.decorators import action
 
 # FAQ 리스트 조회만 가능한 ViewSet
 class FAQViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -113,16 +116,99 @@ class AdminLogoutView(APIView):
         except Exception as e:
             return custom_response(data=None, message=str(e), code=status.HTTP_400_BAD_REQUEST, success=False)
 
+# 부스 조회
+class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = BoothWaitingSerializer
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_class = WaitingFilter
+    ordering_fields = ['created_at']  # 대기 생성 시간 순으로 정렬
+
+    def get_queryset(self):
+        jwt_authenticator = JWTAuthentication()
+        result = jwt_authenticator.authenticate(self.request)
+
+        if result is None:
+            return None
+        
+        user, token = result
+        admin = get_object_or_404(Admin, user=user)
+        booth = admin.booth
+
+        # 해당 부스의 대기 목록 반환
+        return Waiting.objects.filter(booth=booth).order_by('created_at')
+    
+    @action(detail=True, methods=['post'], url_path='action')
+    def action(self, request, *args, **kwargs):
+        """
+        웨이팅 상태를 변경하는 POST 메서드 (action 기반)
+        request body: {"action": "call", "confirm", "cancel"}
+        """
+        jwt_authenticator = JWTAuthentication()
+        result = jwt_authenticator.authenticate(request)
+
+        if result is None:
+            return custom_response(
+                data=None,
+                message="Unauthorized.",
+                code=status.HTTP_401_UNAUTHORIZED,
+                success=False
+            )
+
+        user, token = result
+        admin = get_object_or_404(Admin, user=user)
+        booth = admin.booth
+
+        # 대기 상태 변경할 대상 가져오기
+        waiting_id = kwargs.get('pk')
+        waiting = get_object_or_404(Waiting, id=waiting_id, booth=booth)
+
+        # request body에서 action 값을 가져옴
+        action = request.data.get('action', None)
+
+        if action == 'call':
+            waiting.waiting_status = 'ready_to_confirm'
+            waiting.ready_to_confirm_at = timezone.now()
+        elif action == 'confirm':
+            waiting.waiting_status = 'arrived'
+            waiting.confirmed_at = timezone.now()
+        elif action == 'cancel':
+            waiting.waiting_status = 'canceled'
+            waiting.canceled_at = timezone.now()
+        else:
+            return custom_response(
+                data=None,
+                message="Invalid action.",
+                code=status.HTTP_400_BAD_REQUEST,
+                success=False
+            )
+
+        waiting.save()
+        
+        serializer = BoothWaitingSerializer(waiting)
+        return custom_response(
+            data=serializer.data,
+            message=f"Waiting status updated to {waiting.waiting_status} successfully!",
+            code=status.HTTP_200_OK
+        )
+    
+    
+    
+
+
 # 부스 전체 대기 목록 조회
 class BoothWaitingListView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         try:
-            admin_id = request.session.get('admin_id')  # 세션에서 관리자 ID 가져오기
+            jwt_authenticator = JWTAuthentication()
+            result = jwt_authenticator.authenticate(request)
+
+            if result is None:
+                return custom_response(data=None, message="Unauthorized.", code=status.HTTP_401_UNAUTHORIZED, success=False)
             
-            if not admin_id:
-                return custom_response(data=None, message="You must be logged in as an admin to view reservations.", code=status.HTTP_403_FORBIDDEN, success=False)
-            
-            admin = get_object_or_404(Admin, id=admin_id)  # 로그인한 관리자 정보
+            user, token = result
+            admin = get_object_or_404(Admin, user=user)  # 로그인한 관리자 정보
             booth = admin.booth  # 해당 관리자가 관리하는 부스 정보 가져올 수 있도록 !!
             
             # 해당 부스의 모든 대기 정보 조회
@@ -140,14 +226,17 @@ class BoothWaitingListView(APIView):
     
 # 웨이팅 상태별 필터링
 class BoothWaitingStatusFilterView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, status_group):
         try:
-            admin_id = request.session.get('admin_id')  # 세션에서 관리자 ID 가져오기
-            
-            if not admin_id:
-                return custom_response(data=None, message="You must be logged in as an admin to view reservations.", code=status.HTTP_403_FORBIDDEN, success=False)
-            
-            admin = get_object_or_404(Admin, id=admin_id)  # 로그인한 관리자 정보
+            jwt_authenticator = JWTAuthentication()
+            result = jwt_authenticator.authenticate(request)
+
+            if result is None:
+                return custom_response(data=None, message="Unauthorized.", code=status.HTTP_401_UNAUTHORIZED, success=False)
+            user, token = result
+
+            admin = get_object_or_404(Admin, user = user)  # 로그인한 관리자 정보
             booth = admin.booth
             
             # 상태별 필터링 로직

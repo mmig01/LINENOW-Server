@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     
     'rest_framework',
     'rest_framework.authtoken',
+    'django_filters',
     
     'dj_rest_auth',
     'dj_rest_auth.registration',
@@ -83,6 +84,7 @@ REST_FRAMEWORK = {
         # "rest_framework.authentication.SessionAuthentication",
     ),
     'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
 
 REST_AUTH = {
