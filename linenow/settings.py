@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'booth',
     'waiting',
     'manager',
+    'sms',
 ]
 
 SITE_ID = 1
@@ -246,3 +247,9 @@ SOCIALACCOUNT_PROVIDERS = {
 KAKAO_CLIENT_ID = env("KAKAO_CLIENT_ID")
 KAKAO_CALLBACK_URI = env("KAKAO_CALLBACK_URI")
 BACK_BASE_URL = env("BACK_BASE_URL")
+
+# SMS 관련 설정
+SMS_TOKEN_KEY = env("SMS_TOKEN_KEY")
+SMS_API_KEY = env("SMS_API_KEY")
+SEND_PHONE = env("SEND_PHONE")
+SSODAA_BASE_URL = env("SSODAA_BASE_URL")
