@@ -3,7 +3,7 @@ from django.utils import timezone
 from booth.models import Booth
 from .tasks import check_confirmed, check_ready_to_confirm
 
-from django.contrib.auth.models import User
+from accounts.models import User
 
 class Waiting(models.Model):
     STATUS_CHOICES = [

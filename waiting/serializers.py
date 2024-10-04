@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Waiting
 from booth.models import Booth
-from django.contrib.auth.models import User
+from accounts.models import User
 from django.utils import timezone
 
 # 나의 대기에서 부스 정보 확인용 !! - 아래의 시리얼라이저에서 사용됨 !!

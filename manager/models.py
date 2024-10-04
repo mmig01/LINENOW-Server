@@ -2,7 +2,7 @@ import random
 import string
 from django.db import models
 from booth.models import Booth
-from django.contrib.auth.models import User
+from accounts.models import User
 
 # Create your models here.
 # FAQ
