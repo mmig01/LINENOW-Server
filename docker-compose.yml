@@ -17,10 +17,6 @@ services:
   redis:
     image: redis:6.0
     container_name: linenow-redis
-    volumes:
-      - ./redis.conf:/usr/local/etc/redis/redis.conf  # 로컬의 redis.conf를 컨테이너에 마운트
-      - ./redis/data:/data  # 호스트 디렉터리를 /data로 마운트
-    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     ports:
       - "6379:6379"
     networks:
