@@ -62,6 +62,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     
+    'celery',
+    
     'accounts',
     'booth',
     'waiting',
@@ -146,21 +148,21 @@ WSGI_APPLICATION = 'linenow.wsgi.application'
 IS_DEPLOY = env('DJANGO_DEPLOY')
 
 # 데이터베이스 설정
-if IS_DEPLOY == 'True':
-    # 배포 환경: MySQL 사용
-    DATABASES = {
-        'default': {
-            'ENGINE': env('DATABASE_ENGINE'),
-            'NAME': env('DATABASE_NAME'),
-            'USER': env('DATABASE_USER'),
-            'PASSWORD': env('DATABASE_USER_PASSWORD'),
-            'HOST': env('DATABASE_HOST'),
-            'PORT': env('DATABASE_PORT')
-        }
-    }
-else:
+# if IS_DEPLOY == 'True':
+#     # 배포 환경: MySQL 사용
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': env('DATABASE_ENGINE'),
+#             'NAME': env('DATABASE_NAME'),
+#             'USER': env('DATABASE_USER'),
+#             'PASSWORD': env('DATABASE_USER_PASSWORD'),
+#             'HOST': env('DATABASE_HOST'),
+#             'PORT': env('DATABASE_PORT')
+#         }
+#     }
+# else:
     # 개발 환경: SQLite3 사용 (기본값)
-    DATABASES = {
+DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
