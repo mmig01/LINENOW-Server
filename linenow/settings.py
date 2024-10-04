@@ -36,6 +36,7 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = ['https://linenow.xyz']
 
 # Application definition
 
@@ -49,6 +50,7 @@ INSTALLED_APPS = [
     
     'rest_framework',
     'rest_framework.authtoken',
+    'django_filters',
     
     'dj_rest_auth',
     'dj_rest_auth.registration',
@@ -58,6 +60,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.kakao',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     
     'accounts',
     'booth',
@@ -77,10 +80,13 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        # "utils.CustomCookieAuthentication.CustomCookieAuthentication",
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         "rest_framework.authentication.TokenAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
+        # "rest_framework.authentication.SessionAuthentication",
     ),
     'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
 
 REST_AUTH = {
@@ -98,7 +104,7 @@ REST_USE_JWT = True
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
-    'ROTATE_REFRESH_TOKENS': False,
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'TOKEN_USER_CLASS': "django.contrib.auth.models.User",
 }
@@ -223,7 +229,10 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:8000',
 
     # 프론트엔드 도메인 또는 IP주소
-    ''
+    
+    # 백엔드 도메인 또는 IP주소
+    'https://211.188.52.202',
+    'https://linenow.xyz'
 ]
 
 # Celery 관련 설정
@@ -234,7 +243,8 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
-# 카카오 로그인 관련 설정
+# 카카오 로그인 관련 설정 (DB 대체)
+"""
 SOCIALACCOUNT_PROVIDERS = {
     'kakao': {
         'APP': {
@@ -244,6 +254,7 @@ SOCIALACCOUNT_PROVIDERS = {
         }
     }
 }
+"""
 KAKAO_CLIENT_ID = env("KAKAO_CLIENT_ID")
 KAKAO_CALLBACK_URI = env("KAKAO_CALLBACK_URI")
 BACK_BASE_URL = env("BACK_BASE_URL")

@@ -83,7 +83,7 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPONAME }}:latest
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPONAME }}:${{ GITHUB.SHA }}
 
   deploy:
     needs: build_and_push
@@ -100,9 +100,11 @@ jobs:
         port: ${{ secrets.SSH_PORT }}
         script: |
           cd /root/linenow-dev
+          git pull origin main
+          
           docker-compose down
           docker-compose pull
-          docker-compose up -d
+          docker-compose up --build -d
 
     - name: Collect static files
       uses: appleboy/ssh-action@v1.0.0
