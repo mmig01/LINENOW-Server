@@ -25,5 +25,5 @@ urlpatterns = [
     path('api/v1/', include('waiting.urls')),
     path('api/v1/', include('accounts.urls')),
     path('api/v1/', include('manager.urls')),
-  
+    path('api/v1/', include('sms.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
