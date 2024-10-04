@@ -45,8 +45,6 @@ class Waiting(models.Model):
         self.waiting_status = 'confirmed'
         self.confirmed_at = timezone.now()
         self.save()
-        # 10분 후 상태 확인 작업 호출
-        check_confirmed.apply_async((self.id,), countdown=600)
         
     def set_time_over_canceled(self):
         """3분 내에 입장 확정하지 않을 시 시간 초과로 인한 대기 취소"""
@@ -62,12 +60,8 @@ class Waiting(models.Model):
 
     def is_ready_to_confirm_expired(self):
         """3분 이내에 입장 확정 여부 확인"""
-        if self.ready_to_confirm_at and (timezone.now() - self.ready_to_confirm_at).total_seconds() > 180:
-            return True
-        return False
+        return self.ready_to_confirm_at and (timezone.now() - self.ready_to_confirm_at).total_seconds() > 180
 
     def is_confirmed_expired(self):
         """10분 이내에 도착 여부 확인"""
-        if self.confirmed_at and (timezone.now() - self.confirmed_at).total_seconds() > 600:
-            return True
-        return False
+        return self.confirmed_at and (timezone.now() - self.confirmed_at).total_seconds() > 600
