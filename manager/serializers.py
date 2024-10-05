@@ -1,4 +1,5 @@
 from .models import FAQ, Admin
+from booth.models import Booth
 from rest_framework import serializers
 from waiting.models import Waiting
 from django.utils import timezone
@@ -45,3 +46,25 @@ class BoothWaitingSerializer(serializers.ModelSerializer):
             minutes, seconds = divmod(max(0, 600 - elapsed_time), 60)
             return f'{int(minutes):02}:{int(seconds):02}'
         return "00:00"
+    
+class BoothDetailSerializer(serializers.ModelSerializer):
+    status = serializers.CharField(source='is_operated')
+    
+    def validate_status(self, value):
+        # 'status' 필드의 값이 올바른지 검사
+        if value not in dict(Booth.OPERATED_STATUS).keys():
+            raise serializers.ValidationError(f"Invalid value for status. Expected one of {list(dict(Booth.OPERATED_STATUS).keys())}.")
+        return value
+
+    class Meta:
+        model = Booth
+        fields = ['id', 'name', 'status']
+
+class BoothSerializer(serializers.ModelSerializer):
+    status = serializers.CharField(source='is_operated')
+
+    class Meta:
+        model = Booth
+        # fields = '__all__'
+        # 필드 제거
+        exclude = ['is_operated']

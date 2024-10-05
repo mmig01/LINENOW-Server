@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     
     'rest_framework',
     'rest_framework.authtoken',
+    'django_filters',
     
     'dj_rest_auth',
     'dj_rest_auth.registration',
@@ -59,11 +60,15 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.kakao',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    
+    'celery',
     
     'accounts',
     'booth',
     'waiting',
     'manager',
+    'sms',
 ]
 
 SITE_ID = 1
@@ -75,13 +80,18 @@ ACCOUNT_AUTHENTICATION_METHOD = "username"
 
 ACCOUNT_EMAIL_VERIFICATION = "none"
 
+AUTH_USER_MODEL = 'accounts.User'
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        # "utils.CustomCookieAuthentication.CustomCookieAuthentication",
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
         "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
     ),
     'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
 
 REST_AUTH = {
@@ -99,9 +109,9 @@ REST_USE_JWT = True
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
-    'ROTATE_REFRESH_TOKENS': False,
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
-    'TOKEN_USER_CLASS': "django.contrib.auth.models.User",
+    'TOKEN_USER_CLASS': "accounts.models.User",
 }
 
 MIDDLEWARE = [
@@ -157,11 +167,11 @@ if IS_DEPLOY == 'True':
 else:
     # 개발 환경: SQLite3 사용 (기본값)
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+            }
         }
-    }
 
 
 # Password validation
@@ -250,6 +260,13 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 """
+
 KAKAO_CLIENT_ID = env("KAKAO_CLIENT_ID")
 KAKAO_CALLBACK_URI = env("KAKAO_CALLBACK_URI")
 BACK_BASE_URL = env("BACK_BASE_URL")
+
+# SMS 관련 설정
+SMS_TOKEN_KEY = env("SMS_TOKEN_KEY")
+SMS_API_KEY = env("SMS_API_KEY")
+SEND_PHONE = env("SEND_PHONE")
+SSODAA_BASE_URL = env("SSODAA_BASE_URL")
