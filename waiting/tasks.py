@@ -15,12 +15,12 @@ def check_ready_to_confirm(waiting_id):
 
 @shared_task
 def check_confirmed(waiting_id):
-    """10분 후 입장 확정 상태에서 도착하지 않으면 취소"""
+    """10분 후 입장 확정 상태에서 도착하지 않으면 time_over_canceled 상태로 변경"""
     from .models import Waiting
     try:
         waiting = Waiting.objects.get(pk=waiting_id)
         # 10분이 지났으면 취소 처리
-        if waiting.is_confirmed_expired():
-            waiting.set_canceled()  # 대기 취소 처리
+        if waiting.is_confirmed_expired() and waiting.waiting_status == 'confirmed':
+            waiting.set_time_over_canceled()  # 시간 초과로 취소 처리
     except Waiting.DoesNotExist:
         pass
