@@ -6,6 +6,8 @@ from django.contrib.auth.models import AbstractUser
 class User(AbstractUser):
     first_name = None
     last_name = None
-    password = None
     phone_number = models.CharField(max_length=20, blank=False, name="phone_number")
     nickname = models.CharField(max_length=20, blank=False, name="nickname")
+
+    def __str__(self):
+        return self.nickname
