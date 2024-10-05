@@ -17,6 +17,7 @@ from utils.mixins import CustomResponseMixin
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import WaitingFilter
 from rest_framework.decorators import action
+from waiting.tasks import check_ready_to_confirm
 
 # FAQ 리스트 조회만 가능한 ViewSet
 class FAQViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -116,7 +117,7 @@ class AdminLogoutView(APIView):
         except Exception as e:
             return custom_response(data=None, message=str(e), code=status.HTTP_400_BAD_REQUEST, success=False)
 
-# 부스 조회
+# 부스 웨이팅 조회
 class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = BoothWaitingSerializer
@@ -167,8 +168,16 @@ class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.Ret
         action = request.data.get('action', None)
 
         if action == 'call':
+            if waiting.waiting_status != 'waiting':
+                return custom_response(
+                    data=None,
+                    message="Cannot call team while it is not waiting.",
+                    code=status.HTTP_400_BAD_REQUEST,
+                    success=False
+                )
             waiting.waiting_status = 'ready_to_confirm'
             waiting.ready_to_confirm_at = timezone.now()
+            check_ready_to_confirm.apply_async((waiting.id,), countdown=180)  # 3분 후 Task 실행
         elif action == 'confirm':
             waiting.waiting_status = 'arrived'
             waiting.confirmed_at = timezone.now()
@@ -191,10 +200,159 @@ class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.Ret
             message=f"Waiting status updated to {waiting.waiting_status} successfully!",
             code=status.HTTP_200_OK
         )
-    
-    
-    
 
+
+
+# 부스 관리 
+class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.UpdateModelMixin):
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == 'update':
+            return BoothDetailSerializer
+        return BoothSerializer
+
+    def get_queryset(self):
+        jwt_authenticator = JWTAuthentication()
+        result = jwt_authenticator.authenticate(self.request)
+
+        if result is None:
+            return None
+        
+        user, token = result
+        admin = get_object_or_404(Admin, user=user)
+        booth = admin.booth
+
+        return Booth.objects.filter(id=booth.id)
+    
+    def update(self, request, *args, **kwargs):
+        jwt_authenticator = JWTAuthentication()
+        result = jwt_authenticator.authenticate(request)
+
+        if result is None:
+            return custom_response(
+                data=None,
+                message="Unauthorized.",
+                code=status.HTTP_401_UNAUTHORIZED,
+                success=False
+            )
+
+        user, token = result
+        admin = get_object_or_404(Admin, user=user)
+        booth = admin.booth
+
+        # status 필드가 올바른지 검사, 변수명 충돌을 피하기 위해 _status로 변경
+        _status = request.data.get('status', None)
+        # 부스 정보 업데이트
+        try:
+            serializer = BoothDetailSerializer(booth, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)  # raise_exception=True로 유효성 검사를 바로 처리
+            serializer.save()
+            
+            return custom_response(
+                data=serializer.data,
+                message="Booth information updated successfully.",
+                code=status.HTTP_200_OK
+            )
+        except serializers.ValidationError as e:
+            # 유효성 검사 중 발생한 에러를 400 응답으로 반환
+            return custom_response(
+                data=e.detail,
+                message="Validation error.",
+                code=status.HTTP_400_BAD_REQUEST,
+                success=False
+            )
+
+        except Exception as e:
+            # 예상하지 못한 예외 발생 시에도 500 에러 대신 상세한 에러 메시지를 반환
+            return custom_response(
+                data=str(e),
+                message="An unexpected error occurred.",
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                success=False
+            )
+        
+    # 부스 대기 상태 변경 endpoint 2개로 분리
+    @action(detail=True, methods=['post'], url_path='pause')
+    def pause(self, request, *args, **kwargs):
+        """
+        부스의 대기 상태를 'paused'로 변경.
+        특정 상태에서는 전환할 수 없음 ('not_started', 'finished', 'paused').
+        """
+        jwt_authenticator = JWTAuthentication()
+        result = jwt_authenticator.authenticate(request)
+
+        if result is None:
+            return custom_response(
+                data=None,
+                message="Unauthorized.",
+                code=status.HTTP_401_UNAUTHORIZED,
+                success=False
+            )
+
+        user, token = result
+        admin = get_object_or_404(Admin, user=user)
+        booth = admin.booth
+
+        # 'not_started', 'finished', 'paused' 상태에서는 'paused'로 전환할 수 없음
+        if booth.is_operated in ['not_started', 'finished', 'paused']:
+            return custom_response(
+                data=None,
+                message=f"Cannot pause booth while it is {booth.is_operated}.",
+                code=status.HTTP_400_BAD_REQUEST,
+                success=False
+            )
+
+        # 대기 상태를 'paused'로 변경
+        booth.is_operated = 'paused'
+        booth.save()
+
+        return custom_response(
+            data={'status': booth.is_operated},
+            message="Booth waiting status changed to paused.",
+            code=status.HTTP_200_OK
+        )
+    
+    @action(detail=True, methods=['post'], url_path='resume')
+    def resume(self, request, *args, **kwargs):
+        """
+        부스의 대기 상태를 'operating'으로 변경.
+        특정 상태에서는 전환할 수 없음 ('not_started', 'finished', 'operating').
+        """
+        jwt_authenticator = JWTAuthentication()
+        result = jwt_authenticator.authenticate(request)
+
+        if result is None:
+            return custom_response(
+                data=None,
+                message="Unauthorized.",
+                code=status.HTTP_401_UNAUTHORIZED,
+                success=False
+            )
+
+        user, token = result
+        admin = get_object_or_404(Admin, user=user)
+        booth = admin.booth
+
+        # 'not_started', 'finished', 'operating' 상태에서는 'operating'으로 전환할 수 없음
+        if booth.is_operated in ['not_started', 'finished', 'operating']:
+            return custom_response(
+                data=None,
+                message=f"Cannot resume booth while it is {booth.is_operated}.",
+                code=status.HTTP_400_BAD_REQUEST,
+                success=False
+            )
+
+        # 대기 상태를 'operating'으로 변경
+        booth.is_operated = 'operating'
+        booth.save()
+
+        return custom_response(
+            data={'status': booth.is_operated},
+            message="Booth waiting status changed to operating.",
+            code=status.HTTP_200_OK
+        )
+    # @action(detail=True, methods=['post'], url_path='call')
 
 # 부스 전체 대기 목록 조회
 class BoothWaitingListView(APIView):
