@@ -5,7 +5,7 @@ from .models import Waiting
 from .serializers import WaitingSerializer, WaitingDetailSerializer, WaitingCreateSerializer
 from django.shortcuts import get_object_or_404
 from booth.models import Booth
-from django.contrib.auth.models import User
+from accounts.models import User
 from utils.mixins import CustomResponseMixin
 from utils.exceptions import ResourceNotFound, CustomException
 from utils.responses import custom_response

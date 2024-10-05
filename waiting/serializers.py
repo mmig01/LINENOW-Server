@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Waiting
 from booth.models import Booth
-from django.contrib.auth.models import User
+from accounts.models import User
 from django.utils import timezone
 from datetime import timedelta
 

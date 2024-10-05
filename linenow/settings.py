@@ -80,6 +80,8 @@ ACCOUNT_AUTHENTICATION_METHOD = "username"
 
 ACCOUNT_EMAIL_VERIFICATION = "none"
 
+AUTH_USER_MODEL = 'accounts.User'
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # "utils.CustomCookieAuthentication.CustomCookieAuthentication",
@@ -108,7 +110,7 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
-    'TOKEN_USER_CLASS': "django.contrib.auth.models.User",
+    'TOKEN_USER_CLASS': "accounts.models.User",
 }
 
 MIDDLEWARE = [
