@@ -10,6 +10,7 @@ from utils.mixins import CustomResponseMixin
 from utils.exceptions import ResourceNotFound, CustomException
 from utils.responses import custom_response
 from django.db.models import Q
+from .tasks import check_confirmed
 
 
 class WaitingViewSet(viewsets.GenericViewSet):
@@ -86,8 +87,13 @@ class WaitingViewSet(viewsets.GenericViewSet):
     def confirm_waiting(self, request, pk=None):
         user = request.user
         waiting = get_object_or_404(Waiting, pk=pk, user=user)
+        
         if waiting.waiting_status == 'ready_to_confirm':
             waiting.set_confirmed()
+            
+            # 10분 후 check_confirmed task 호출
+            check_confirmed.apply_async((waiting.id,), countdown=600)  # 10분 (600초) 후 실행
+
             return custom_response(message="Waiting confirmed successfully.", code=status.HTTP_200_OK)
         return custom_response(message="Unable to confirm waiting in current status.", code=status.HTTP_400_BAD_REQUEST, success=False)
 
