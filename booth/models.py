@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.utils import timezone
 # Create your models here.
 def image_upload_path(instance, filename):
     event_id = instance.booth.event.id
@@ -18,6 +18,7 @@ class Booth(models.Model):
         ('not_started', 'Not Started'), # DB에 저장되는 값, 사용자에게 보여지는 값 순
         ('operating', 'Operating'),
         ('finished', 'Finished'),
+        ('paused', 'Paused')
     ]
 
     id = models.AutoField(primary_key=True)
@@ -29,6 +30,13 @@ class Booth(models.Model):
     is_operated = models.CharField(max_length=100, choices=OPERATED_STATUS, verbose_name="운영 여부")
     open_time = models.DateTimeField(verbose_name="시작 시간")
     close_time = models.DateTimeField(verbose_name="마감 시간")
+
+    def save(self, *args, **kwargs):
+        if self.is_operated == 'operating' and self.open_time is None:
+            self.open_time = timezone.now()
+        elif self.is_operated == 'finished' and self.close_time is None:
+            self.close_time = timezone.now()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
