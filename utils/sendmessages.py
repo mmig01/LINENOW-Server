@@ -33,15 +33,13 @@ def sendsms(dest_phone, msg_body):
         "send_phone": SEND_PHONE,
         "msg_body": msg_body,
     }
-    print(data)
-    return custom_response(data=data, message="perfect", code=status.HTTP_200_OK)
-    """
+    
     try:
         url = f"{SSODAA_BASE_URL}/sms/send/sms"
         response = requests.post(url, json=data, headers=headers)
         response = response.json()
         status_code = int(response.get('code'))
-
+        print(response)
         if status_code == 200:
             content = response.get('content')
             data = {
@@ -56,4 +54,3 @@ def sendsms(dest_phone, msg_body):
 
     except requests.exceptions.RequestException:
         return custom_response(message="Failed to send messages.", code=status.HTTP_400_BAD_REQUEST, success=False)
-    """

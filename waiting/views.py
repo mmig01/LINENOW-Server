@@ -11,6 +11,7 @@ from utils.responses import custom_response
 from django.db.models import Q
 from utils.permissions import IsUser
 from .tasks import check_confirmed
+from utils.sendmessages import sendsms
 
 
 class WaitingViewSet(viewsets.GenericViewSet):
@@ -71,6 +72,9 @@ class WaitingViewSet(viewsets.GenericViewSet):
                     raise CustomException("User not found.")
             
             serializer.save(booth=booth, user=user)
+            # 문자 메시지 발송
+            phone_number = user.phone_number
+            sendsms(phone_number, f"[라인나우] 대기가 등록되었어요 추후 입장 확정 문자를 확인해 주세요!")
             return custom_response(data=serializer.data, message="Waiting registered successfully !", code=status.HTTP_201_CREATED)
         
         return custom_response(data=serializer.errors, message="Failed to register waiting.", code=status.HTTP_400_BAD_REQUEST, success=False)
@@ -90,10 +94,9 @@ class WaitingViewSet(viewsets.GenericViewSet):
         waiting = get_object_or_404(Waiting, pk=pk, user=user)
         
         if waiting.waiting_status == 'ready_to_confirm':
-            waiting.set_confirmed()
-            
+            waiting.set_confirmed()       
             # 10분 후 check_confirmed task 호출
-            check_confirmed.apply_async((waiting.id,), countdown=600)  # 10분 (600초) 후 실행
+            check_confirmed.apply_async((waiting.id, waiting.user.phone_number), countdown=600)  # 10분 (600초) 후 실행
 
             return custom_response(message="Waiting confirmed successfully.", code=status.HTTP_200_OK)
         return custom_response(message="Unable to confirm waiting in current status.", code=status.HTTP_400_BAD_REQUEST, success=False)

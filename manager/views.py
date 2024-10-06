@@ -222,8 +222,9 @@ class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Re
                 for waiting in Waiting.objects.filter(booth=booth, waiting_status='waiting'):
                     waiting.set_canceled()
                     waiting.save()
-                    # 취소 처리 Sms 전송 구현 예정
-
+                    # 취소 처리 문자 메시지 발송
+                    phone_number = waiting.user.phone_number
+                    sendsms(phone_number, f"[라인나우] 대기 등록한 부스의 운영이 종료되어, 대기가 취소되었어요")
                     # 대기 중인 팀들을 모두 삭제 처리
                     waiting.delete()
 
