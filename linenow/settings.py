@@ -36,7 +36,7 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ['*']
-CSRF_TRUSTED_ORIGINS = ['https://linenow.xyz']
+CSRF_TRUSTED_ORIGINS = ['https://linenow.xyz', "https://211.188.52.202"]
 
 # Application definition
 
@@ -152,7 +152,7 @@ WSGI_APPLICATION = 'linenow.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 IS_DEPLOY = env('DJANGO_DEPLOY')
-
+"""
 # 데이터베이스 설정
 if IS_DEPLOY == 'True':
     # 배포 환경: MySQL 사용
@@ -167,13 +167,14 @@ if IS_DEPLOY == 'True':
         }
     }
 else:
-    # 개발 환경: SQLite3 사용 (기본값)
-    DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-            }
+"""
+# 개발 환경: SQLite3 사용 (기본값)
+DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         }
+    }
 
 
 # Password validation
