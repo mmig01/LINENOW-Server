@@ -149,20 +149,20 @@ class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.Ret
                 )
             waiting.waiting_status = 'ready_to_confirm'
             waiting.ready_to_confirm_at = timezone.now()
+            # 문자 메시지 발송
+            phone_number = waiting.user.phone_number
+            sendsms(phone_number, f"[라인나우] 입장 순서가 되었어요. 3분 내로 입장을 확정해 주세요!")
             check_ready_to_confirm.apply_async((waiting.id,), countdown=180)  # 3분 후 Task 실행
         elif action == 'confirm':
-            if waiting.waiting_status != 'ready_to_confirm' :
+            if waiting.waiting_status != 'confirmed' :
                 return custom_response(
                     data=None,
                     message="Cannot confirm team while it is not confirmed.",
                     code=status.HTTP_400_BAD_REQUEST,
                     success=False
                 )
-            waiting.waiting_status = 'confirmed'
+            waiting.waiting_status = 'arrived'
             waiting.confirmed_at = timezone.now()
-            # 문자 메시지 발송
-            phone_number = waiting.user.phone_number
-            sendsms(phone_number, f"[라인나우] 입장 순서가 되었어요. 3분 내로 입장을 확정해 주세요!")
         elif action == 'cancel':
             if waiting.waiting_status in ['canceled', 'time_over_canceled']:
                 return custom_response(
