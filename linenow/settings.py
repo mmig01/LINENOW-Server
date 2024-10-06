@@ -167,14 +167,13 @@ if IS_DEPLOY == 'True':
         }
     }
 else:
-"""
-# 개발 환경: SQLite3 사용 (기본값)
-DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    # 개발 환경: SQLite3 사용 (기본값)
+    DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+            }
         }
-    }
 
 
 # Password validation
