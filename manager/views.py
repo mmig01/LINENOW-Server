@@ -144,14 +144,14 @@ class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.Ret
             waiting.ready_to_confirm_at = timezone.now()
             check_ready_to_confirm.apply_async((waiting.id,), countdown=180)  # 3분 후 Task 실행
         elif action == 'confirm':
-            if waiting.waiting_status != 'confirmed' :
+            if waiting.waiting_status != 'ready_to_confirm' :
                 return custom_response(
                     data=None,
                     message="Cannot confirm team while it is not confirmed.",
                     code=status.HTTP_400_BAD_REQUEST,
                     success=False
                 )
-            waiting.waiting_status = 'arrived'
+            waiting.waiting_status = 'confirmed'
             waiting.confirmed_at = timezone.now()
             # 문자 메시지 발송
             phone_number = waiting.user.phone_number
