@@ -239,6 +239,10 @@ CORS_ALLOWED_ORIGINS = [
     # 백엔드 도메인 또는 IP주소
     'https://211.188.52.202',
     'https://linenow.xyz'
+    'http://linenow-manager.co.kr',
+    'https://linenow-manager.co.kr',
+    'http://linenow.co.kr',
+    'https://linenow.co.kr'
 ]
 
 # Celery 관련 설정
