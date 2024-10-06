@@ -10,10 +10,12 @@ from django.conf import settings
 
 class WithdrawUserView(APIView) :
     def post(self,req):
-        token = req.COOKIES.get('access_token')
+        token = req.headers.get('Authorization')  # 헤더에서 Authorization 값 가져오기
         print(token)
         if not token:
             raise AuthenticationFailed('Access token is missing or invalid')
+        if token.startswith('Bearer '):
+            token = token.split(' ')[1]
 
         try:
             # 토큰 디코딩
