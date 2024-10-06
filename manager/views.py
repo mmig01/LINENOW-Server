@@ -20,6 +20,7 @@ from rest_framework.decorators import action
 from waiting.tasks import check_ready_to_confirm
 from utils.sendmessages import sendsms
 from django.utils import timezone
+from django.db.models import Case, When, Value, IntegerField
 
 # FAQ 리스트 조회만 가능한 ViewSet
 class FAQViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -114,7 +115,13 @@ class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.Ret
         booth = admin.booth
 
         # 해당 부스의 대기 목록 반환
-        return Waiting.objects.filter(booth=booth).order_by('created_at')
+        return Waiting.objects.filter(booth=booth).annotate(
+        canceled_order=Case(
+            When(waiting_status__in=['canceled', 'time_over_canceled'], then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField(),
+        )
+    ).order_by('canceled_order', 'registered_at')  # 취소된 순서대로 뒤로 정렬
     
     @action(detail=True, methods=['post'], url_path='action')
     def action(self, request, *args, **kwargs):
