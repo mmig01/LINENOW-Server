@@ -105,6 +105,6 @@ class WaitingViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=['get'], url_path='now-waitings')
     def waiting_list(self, request):
         user = request.user
-        queryset = Waiting.objects.filter(user=user, waiting_status='waiting')
+        queryset = Waiting.objects.filter(user=user, waiting_status__in=['waiting','ready_to_confirm','confirmed'])
         serializer = self.get_serializer(queryset, many=True)
         return custom_response(data=serializer.data, message="My now waiting list fetched successfully.", code=status.HTTP_200_OK)
