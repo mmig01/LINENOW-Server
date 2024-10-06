@@ -86,9 +86,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # "utils.CustomCookieAuthentication.CustomCookieAuthentication",
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        "rest_framework.authentication.TokenAuthentication",
+        #"rest_framework.authentication.TokenAuthentication",
         #"rest_framework.authentication.SessionAuthentication",
-        "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
+        #"dj_rest_auth.jwt_auth.JWTCookieAuthentication",
     ),
     'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
@@ -96,12 +96,11 @@ REST_FRAMEWORK = {
 
 REST_AUTH = {
     'USE_JWT' : True,
-    'JWT_AUTH_COOKIE' : 'access_token',
-    'JWT_AUTH_HTTPONLY': True,
-    'JWT_AUTH_REFRESH_COOKIE' : "refresh_token",
-    'JWT_AUTH_SAMESITE': 'Lax',
-    'JWT_AUTH_COOKIE_USE_CSRF' : True,
+    'JWT_AUTH_COOKIE' : None, 
+    'JWT_AUTH_REFRESH_COOKIE' : None,
+    'JWT_AUTH_HTTPONLY': False,
     'SESSION_LOGIN' : False
+
 }
 
 REST_USE_JWT = True
