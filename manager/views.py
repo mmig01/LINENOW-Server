@@ -1,3 +1,4 @@
+from datetime import timezone
 from rest_framework import mixins, viewsets, filters
 from .models import *
 from .serializers import *
@@ -180,7 +181,7 @@ class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.Ret
 
 
 # 부스 관리 
-class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.UpdateModelMixin):
+class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.ListModelMixin):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsAdminUser]
 
@@ -195,7 +196,8 @@ class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Re
 
         return Booth.objects.filter(id=booth.id)
     
-    def update(self, request, *args, **kwargs):
+    @action(detail=False, methods=['post'], url_path='status')
+    def update_status(self, request, *args, **kwargs):
         admin = self.request.admin
         booth = admin.booth
 
@@ -206,10 +208,20 @@ class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Re
             serializer = BoothDetailSerializer(booth, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)  # raise_exception=True로 유효성 검사를 바로 처리
             serializer.save()
-            
+
+            # status가 finished로 변경되면 대기 중인 팀들을 모두 삭제 처리
+            if _status == 'finished':
+                for waiting in Waiting.objects.filter(booth=booth, waiting_status='waiting'):
+                    waiting.set_canceled()
+                    waiting.save()
+                    # 취소 처리 Sms 전송 구현 예정
+
+                    # 대기 중인 팀들을 모두 삭제 처리
+                    waiting.delete()
+
             return custom_response(
                 data=serializer.data,
-                message="Booth information updated successfully.",
+                message="Booth status updated successfully.",
                 code=status.HTTP_200_OK
             )
         except serializers.ValidationError as e:
@@ -231,7 +243,7 @@ class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Re
             )
         
     # 부스 대기 상태 변경 endpoint 2개로 분리
-    @action(detail=True, methods=['post'], url_path='pause')
+    @action(detail=False, methods=['post'], url_path='pause')
     def pause(self, request, *args, **kwargs):
         """
         부스의 대기 상태를 'paused'로 변경.
@@ -259,7 +271,7 @@ class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Re
             code=status.HTTP_200_OK
         )
     
-    @action(detail=True, methods=['post'], url_path='resume')
+    @action(detail=False, methods=['post'], url_path='resume')
     def resume(self, request, *args, **kwargs):
         """
         부스의 대기 상태를 'operating'으로 변경.

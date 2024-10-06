@@ -12,7 +12,7 @@ booth_waiting_router = routers.SimpleRouter(trailing_slash=False)
 booth_waiting_router.register(r'waitings', BoothWaitingViewSet, basename='waitings')
 
 booth_detail_router = routers.SimpleRouter(trailing_slash=False)
-booth_detail_router.register(r'booths', BoothDetailViewSet, basename='booths')
+booth_detail_router.register(r'booth', BoothDetailViewSet, basename='booth')
 
 urlpatterns = [
     path('', include(faq_router.urls)),
