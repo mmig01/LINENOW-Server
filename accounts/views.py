@@ -7,31 +7,20 @@ from .models import User
 import jwt
 from rest_framework.permissions import IsAuthenticated
 from django.conf import settings
+from utils.responses import custom_response
 
 class WithdrawUserView(APIView) :
     def post(self,req):
-        token = req.COOKIES.get('access_token')
-        print(token)
-        if not token:
-            raise AuthenticationFailed('Access token is missing or invalid')
 
-        try:
-            # 토큰 디코딩
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Access token has expired')
-        except jwt.InvalidTokenError:
-            raise AuthenticationFailed('Invalid access token')
-
-        # 유저 확인
-        if payload['user_id'] != req.user.id:
-            raise AuthenticationFailed('User does not match the token')
+        user = req.user
+        refresh_token = req.data.get('refresh_token')
+        if not refresh_token:
+            return custom_response(data=None, message="Refresh token not provided.",
+                                    code=status.HTTP_400_BAD_REQUEST, success=False)
 
         # 유저 삭제
-        user = req.user
         user.delete()
 
         res = Response({"message": "User delete success"})
-        res.delete_cookie('access_token')
-        res.delete_cookie('refresh_token')
+
         return res
