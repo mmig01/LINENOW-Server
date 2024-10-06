@@ -20,15 +20,15 @@ class BoothWaitingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Waiting
         fields = [
-            'id', 'user', 'party_size', 'waiting_status', 'ready_to_confirm_at',
+            'id', 'user', 'party_size', 'waiting_status', 'registered_at','ready_to_confirm_at',
             'confirmed_at', 'canceled_at', 'confirm_due_time', 'arrival_due_time'
         ]
 
     # 사용자 정보 반환 (이름과 전화번호)
     def get_user(self, obj):
         return {
-            # "phone_number": obj.user.phone_number,
-            "name": obj.user.username
+            "phone_number": obj.user.phone_number,
+            "name": obj.user.name
         }
 
     # 3분 더한 시간 반환
