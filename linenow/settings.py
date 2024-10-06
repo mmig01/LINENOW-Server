@@ -152,7 +152,7 @@ WSGI_APPLICATION = 'linenow.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 IS_DEPLOY = env('DJANGO_DEPLOY')
-"""
+
 # 데이터베이스 설정
 if IS_DEPLOY == 'True':
     # 배포 환경: MySQL 사용
