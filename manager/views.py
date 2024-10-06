@@ -18,6 +18,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .filters import WaitingFilter
 from rest_framework.decorators import action
 from waiting.tasks import check_ready_to_confirm
+from utils.sendmessages import sendsms
+from django.utils import timezone
 
 # FAQ 리스트 조회만 가능한 ViewSet
 class FAQViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -151,6 +153,9 @@ class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.Ret
                 )
             waiting.waiting_status = 'arrived'
             waiting.confirmed_at = timezone.now()
+            # 문자 메시지 발송
+            phone_number = waiting.user.phone_number
+            sendsms(phone_number, f"[라인나우] 입장 순서가 되었어요. 3분 내로 입장을 확정해 주세요!")
         elif action == 'cancel':
             if waiting.waiting_status in ['canceled', 'time_over_canceled']:
                 return custom_response(
@@ -161,6 +166,9 @@ class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.Ret
                 )
             waiting.waiting_status = 'canceled'
             waiting.canceled_at = timezone.now()
+            # 문자 메시지 발송
+            phone_number = waiting.user.phone_number
+            sendsms(phone_number, f"[라인나우] 부스 사정으로 인해, 대기가 취소되었어요")
         else:
             return custom_response(
                 data=None,
