@@ -30,6 +30,12 @@ class InvalidToken(APIException):
     default_detail = 'The token was invalid.'
     default_code = 'invalid_token' 
 
+# Not Admin
+class IsNotAdmin(APIException):
+    status_code = 403
+    default_detail = 'The user is not an admin.'
+    default_code = 'is_not_admin'
+
 # 커스텀 예외 핸들러
 def custom_exception_handler(exc, context):
     """

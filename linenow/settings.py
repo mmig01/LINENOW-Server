@@ -73,9 +73,9 @@ INSTALLED_APPS = [
 
 SITE_ID = 1
 
-ACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_USER_MODEL_USERNAME_FIELD = "name"
+ACCOUNT_EMAIL_REQUIRED = False
+ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = "username"
 
 ACCOUNT_EMAIL_VERIFICATION = "none"
@@ -87,7 +87,8 @@ REST_FRAMEWORK = {
         # "utils.CustomCookieAuthentication.CustomCookieAuthentication",
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         "rest_framework.authentication.TokenAuthentication",
-        # "rest_framework.authentication.SessionAuthentication",
+        #"rest_framework.authentication.SessionAuthentication",
+        "dj_rest_auth.jwt_auth.JWTCookieAuthentication",
     ),
     'EXCEPTION_HANDLER': 'utils.exceptions.custom_exception_handler',
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
@@ -112,6 +113,8 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'TOKEN_USER_CLASS': "accounts.models.User",
 }
+
+ACCOUNT_ADAPTER = 'accounts.adapters.CustomUserAccountAdapter'
 
 MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
@@ -246,23 +249,6 @@ CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')  # 결과 백엔드 주소
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-
-# 카카오 로그인 관련 설정 (DB 대체)
-"""
-SOCIALACCOUNT_PROVIDERS = {
-    'kakao': {
-        'APP': {
-            'client_id': env('KAKAO_CLIENT_ID'),
-            'secret': env('KAKAO_SECRET'),
-            'key': ''
-        }
-    }
-}
-"""
-
-KAKAO_CLIENT_ID = env("KAKAO_CLIENT_ID")
-KAKAO_CALLBACK_URI = env("KAKAO_CALLBACK_URI")
-BACK_BASE_URL = env("BACK_BASE_URL")
 
 # SMS 관련 설정
 SMS_TOKEN_KEY = env("SMS_TOKEN_KEY")
