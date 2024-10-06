@@ -47,6 +47,7 @@ services:
     command: gunicorn linenow.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - ./staticfiles:/app/staticfiles   # 정적 파일 공유
+      - ./media:/app/media               # 미디어 파일 공유
     depends_on:
       - db
     networks:
@@ -66,6 +67,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./staticfiles:/app/staticfiles   # Nginx에서 정적 파일 접근 가능
+      - ./media:/app/media               # 미디어 파일 접근 가능
       - /etc/letsencrypt/live/linenow.xyz:/etc/letsencrypt/live/linenow.xyz:ro  # SSL 인증서 공유 (읽기 전용)
       - /etc/letsencrypt/archive/linenow.xyz:/etc/letsencrypt/archive/linenow.xyz:ro  # SSL 인증서 저장소 공유
     depends_on:
