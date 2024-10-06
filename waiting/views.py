@@ -6,15 +6,16 @@ from .serializers import WaitingSerializer, WaitingDetailSerializer, WaitingCrea
 from django.shortcuts import get_object_or_404
 from booth.models import Booth
 from accounts.models import User
-from utils.mixins import CustomResponseMixin
 from utils.exceptions import ResourceNotFound, CustomException
 from utils.responses import custom_response
 from django.db.models import Q
+from utils.permissions import IsUser
 from .tasks import check_confirmed
 
 
 class WaitingViewSet(viewsets.GenericViewSet):
     queryset = Waiting.objects.all()
+    permission_classes = [IsUser]
     
     def get_serializer_class(self):
         if self.action == 'list':
