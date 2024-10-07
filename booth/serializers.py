@@ -41,13 +41,18 @@ class BoothListSerializer(serializers.ModelSerializer):
     def get_is_waiting(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return Waiting.objects.filter(user=request.user, booth=obj).exists()
+            return Waiting.objects.filter(
+                user=request.user, 
+                booth=obj,
+                waiting_status__in=['waiting', 'ready_to_confirm', 'confirmed']
+            ).exists()
         return False
 
+    # 여러 번 대기를 걸었을 때 가장 최근의 status를 반영
     def get_waiting_status(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            waiting = Waiting.objects.filter(user=request.user, booth=obj).first()
+            waiting = Waiting.objects.filter(user=request.user, booth=obj).order_by('-registered_at').first()
             if waiting:
                 return waiting.waiting_status
         return None
@@ -72,17 +77,21 @@ class BoothDetailSerializer(serializers.ModelSerializer):
     def get_waiting_count(self, obj):
         return obj.waitings.count()
     
-    # 사용자 대기 관련
+    # 사용자 대기 관련 
     def get_is_waiting(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return Waiting.objects.filter(user=request.user, booth=obj).exists()
+            return Waiting.objects.filter(
+                user=request.user, 
+                booth=obj,
+                waiting_status__in=['waiting', 'ready_to_confirm', 'confirmed']
+            ).exists()
         return False
 
     def get_waiting_status(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            waiting = Waiting.objects.filter(user=request.user, booth=obj).first()
+            waiting = Waiting.objects.filter(user=request.user, booth=obj).order_by('-registered_at').first()
             if waiting:
                 return waiting.waiting_status
         return None
