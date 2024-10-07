@@ -14,7 +14,7 @@ def check_ready_to_confirm(waiting_id):
             # 문자 메시지 발송
             phone_number = waiting.user.phone_number
             print(phone_number)
-            sendsms(phone_number, f"[라인나우] 3분 내에 부스 입장을 확정하지 않아, 대기가 취소되었어요")
+            sendsms(phone_number, f"[대기취소] 3분 내에 부스 입장을 확정하지 않아, 대기가 취소되었어요")
     except Waiting.DoesNotExist:
         pass
 
@@ -31,6 +31,6 @@ def check_confirmed(waiting_id, phone_number):
             waiting.set_time_over_canceled()  # 시간 초과로 취소 처리
             # 문자 메시지 발송
             print(phone_number)
-            sendsms(phone_number, f"[라인나우] 10분 내에 부스에 입장하지 않아, 대기가 취소되었어요")
+            sendsms(phone_number, f"[대기취소] 10분 내에 부스에 입장하지 않아, 대기가 취소되었어요")
     except Waiting.DoesNotExist:
         pass

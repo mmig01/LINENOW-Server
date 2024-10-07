@@ -151,7 +151,7 @@ class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.Ret
             waiting.ready_to_confirm_at = timezone.now()
             # 문자 메시지 발송
             phone_number = waiting.user.phone_number
-            sendsms(phone_number, f"[라인나우] 입장 순서가 되었어요. 3분 내로 입장을 확정해 주세요!")
+            sendsms(phone_number, f"[입장확정] 입장 순서가 되어 3분 내로 입장을 확정해 주세요! https://linenow.co.kr")
             check_ready_to_confirm.apply_async((waiting.id,), countdown=180)  # 3분 후 Task 실행
         elif action == 'confirm':
             if waiting.waiting_status != 'confirmed' :
@@ -175,7 +175,7 @@ class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.Ret
             waiting.canceled_at = timezone.now()
             # 문자 메시지 발송
             phone_number = waiting.user.phone_number
-            sendsms(phone_number, f"[라인나우] 부스 사정으로 인해, 대기가 취소되었어요")
+            sendsms(phone_number, f"[대기취소] 부스 사정으로 인해, 대기가 취소되었어요")
         else:
             return custom_response(
                 data=None,
@@ -231,7 +231,7 @@ class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Re
                     waiting.save()
                     # 취소 처리 문자 메시지 발송
                     phone_number = waiting.user.phone_number
-                    sendsms(phone_number, f"[라인나우] 대기 등록한 부스의 운영이 종료되어, 대기가 취소되었어요")
+                    sendsms(phone_number, f"[대기취소] 대기 등록한 부스의 운영이 종료되어, 대기가 취소되었어요")
                     # 대기 중인 팀들을 모두 삭제 처리
                     waiting.delete()
 
