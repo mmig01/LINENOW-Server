@@ -12,7 +12,7 @@ from django.db.models import Q
 from utils.permissions import IsUser
 from .tasks import check_confirmed
 from utils.sendmessages import sendsms
-
+from django.utils import timezone
 
 class WaitingViewSet(viewsets.GenericViewSet):
     queryset = Waiting.objects.all()
@@ -97,6 +97,12 @@ class WaitingViewSet(viewsets.GenericViewSet):
             waiting.set_confirmed()       
             # 10분 후 check_confirmed task 호출
             check_confirmed.apply_async((waiting.id, waiting.user.phone_number), countdown=600)  # 10분 (600초) 후 실행
+            
+            # 한 웨이팅 '입장 확정' 시 다른 웨이팅 모두 취소
+            Waiting.objects.filter(
+                user=user, 
+                waiting_status__in=['waiting', 'ready_to_confirm', 'confirmed']  # 대기 취소, 시간 초과로 인한 대기 취소, 입장 완료는 제외
+            ).exclude(pk=waiting.id).update(waiting_status='canceled', canceled_at=timezone.now()) # 현재 입장 확정 중인 건 제외하고 '대기 취소'로 상태 변경
 
             return custom_response(message="Waiting confirmed successfully.", code=status.HTTP_200_OK)
         return custom_response(message="Unable to confirm waiting in current status.", code=status.HTTP_400_BAD_REQUEST, success=False)
