@@ -238,7 +238,7 @@ CORS_ALLOWED_ORIGINS = [
     
     # 백엔드 도메인 또는 IP주소
     'https://211.188.52.202',
-    'https://linenow.xyz'
+    'https://linenow.xyz',
     'http://linenow-manager.co.kr',
     'https://linenow-manager.co.kr',
     'http://linenow.co.kr',
@@ -258,3 +258,6 @@ SMS_TOKEN_KEY = env("SMS_TOKEN_KEY")
 SMS_API_KEY = env("SMS_API_KEY")
 SEND_PHONE = env("SEND_PHONE")
 SSODAA_BASE_URL = env("SSODAA_BASE_URL")
+
+# Turnstile 관련 설정
+TURNSTILE_SECRET_KEY = env("TURNSTILE_SECRET_KEY")
