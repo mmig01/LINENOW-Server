@@ -31,12 +31,17 @@ class Booth(models.Model):
     open_time = models.DateTimeField(verbose_name="시작 시간")
     close_time = models.DateTimeField(verbose_name="마감 시간")
 
-    def save(self, *args, **kwargs):
-        if self.is_operated == 'operating' and self.open_time is None:
-            self.open_time = timezone.now()
-        elif self.is_operated == 'finished' and self.close_time is None:
-            self.close_time = timezone.now()
-        super().save(*args, **kwargs)
+    @property
+    def is_operated(self):
+        current_time = timezone.now()
+        if self.open_time and self.close_time:
+            if self.open_time <= current_time < self.close_time:
+                return 'operating'  # 운영 시간 내이면 '운영 중'
+            elif current_time >= self.close_time:
+                return 'finished'  # 마감 시간을 넘겼으면 '운영 종료'
+            else:
+                return 'not_started'  # 아직 시작 시간이 되지 않았으면 '운영 전'
+        return 'not_started'
 
     def __str__(self):
         return self.name
