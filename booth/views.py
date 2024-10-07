@@ -39,6 +39,15 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
             return custom_response({'booth_count': booth_count}, message='Booth count fetched successfully')
         except Exception as e:
             return custom_response(data=None, message=str(e), code=status.HTTP_500_INTERNAL_SERVER_ERROR, success=False)
+        
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            booth = self.get_object()
+            serializer = self.get_serializer(booth)
+            return custom_response(data=serializer.data, message="Booth detail fetched successfully", code=status.HTTP_200_OK)
+        except Exception as e:
+            return custom_response(data=None, message=str(e), code=status.HTTP_500_INTERNAL_SERVER_ERROR, success=False)
+
     
     # 에러 띄우기 위한 함수
     @action(detail=False, methods=['get'], url_path='error')
