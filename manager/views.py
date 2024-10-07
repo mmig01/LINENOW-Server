@@ -314,3 +314,28 @@ class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Re
             message="Booth waiting status changed to operating.",
             code=status.HTTP_200_OK
         )
+
+# 상태별 웨이팅 개수 카운트
+class WaitingCountView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    
+    def get(self, request):
+        admin = self.request.admin
+        booth = admin.booth
+
+        waiting_count = WaitingFilter({'status': 'waiting'}, queryset=Waiting.objects.filter(booth=booth)).qs.count()
+        calling_count = WaitingFilter({'status': 'calling'}, queryset=Waiting.objects.filter(booth=booth)).qs.count()
+        arrived_count = WaitingFilter({'status': 'arrived'}, queryset=Waiting.objects.filter(booth=booth)).qs.count()
+        canceled_count = WaitingFilter({'status': 'canceled'}, queryset=Waiting.objects.filter(booth=booth)).qs.count()
+
+        return custom_response(
+            data={
+                "waiting": waiting_count,
+                "calling": calling_count,
+                "arrived": arrived_count,
+                "canceled": canceled_count
+            },
+            message="Waiting counts fetched successfully",
+            code=status.HTTP_200_OK
+        )

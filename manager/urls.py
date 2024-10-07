@@ -20,8 +20,7 @@ urlpatterns = [
     path('manager/', include(booth_detail_router.urls)),
     path('manager/login', AdminLoginView.as_view(), name='admin_login'),
     path('manager/logout', AdminLogoutView.as_view(), name='admin_logout'),
-
-    
+    path('manager/waiting-counts', WaitingCountView.as_view(), name='waiting_counts'),
     # path('manager/waitings', BoothWaitingListView.as_view(), name='booth_waiting_list'),
     # path('manager/waitings/status/<str:status_group>', BoothWaitingStatusFilterView.as_view(), name='booth_waiting_status_filter'),
 
