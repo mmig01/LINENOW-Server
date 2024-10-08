@@ -10,6 +10,8 @@ from django.conf import settings
 from utils.responses import custom_response
 from dj_rest_auth.registration.views import RegisterView
 from .forms import CustomSignupForm
+import logging
+logger = logging.getLogger(__name__)
 
 
 class WithdrawUserView(APIView) :
@@ -32,6 +34,12 @@ class CustomRegisterView(RegisterView):
     form_class = CustomSignupForm  # Turnstile이 적용된 폼을 사용
 
     def create(self, request, *args, **kwargs):
+        logger.debug(request.data)  # print 대신 로깅 사용
+        form = self.form_class(request.data)
+        if not form.is_valid():
+            logger.debug("Form is invalid")
+            return custom_response(data=None, message=form.errors, code=status.HTTP_400_BAD_REQUEST, success=False)
+        
         print(request.data)
         response = super().create(request, *args, **kwargs)
         return response
