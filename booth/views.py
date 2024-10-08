@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Count
+from django.db.models import Case, When, Value, IntegerField, Count
 from rest_framework.filters import OrderingFilter
 from .models import Booth
 from .serializers import BoothListSerializer, BoothDetailSerializer
@@ -12,9 +12,9 @@ from utils.exceptions import *
 
 class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.ListModelMixin):
     queryset = Booth.objects.all()
-    filter_backends = [OrderingFilter]
-    ordering_fields = ['name', 'waiting_count']
-    ordering = ['name'] # 디폴트 정렬: 부스명 가나다순
+    # filter_backends = [OrderingFilter]
+    # ordering_fields = ['name', 'waiting_count', 'is_operated']
+    # ordering = ['name'] # 디폴트 정렬: 부스명 가나다순
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -22,8 +22,29 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
         return BoothDetailSerializer 
     
     def get_queryset(self):
-        queryset = Booth.objects.annotate(waiting_count=Count('waitings'))
-        return queryset
+        # 운영 상태에 따른 정렬 우선순위 설정 ! '운영 중 - 대기 중지 - 운영 전 - 운영종료' 순
+        queryset = Booth.objects.annotate(
+            waiting_count=Count('waitings'),
+            is_operated_order=Case(
+                When(is_operated='operating', then=Value(1)),
+                When(is_operated='paused', then=Value(2)),
+                When(is_operated='not_started', then=Value(3)),
+                When(is_operated='finished', then=Value(4)),
+                output_field=IntegerField()
+            )
+        )
+        
+        # ordering 파라미터가 waiting_count일 경우 '운영 상태'로 정렬 후 '대기 순'으로 정렬
+        ordering = self.request.query_params.get('ordering')
+        if ordering == 'waiting_count':
+            return queryset.order_by('is_operated_order', 'waiting_count')
+        elif ordering == '-waiting_count':
+            return queryset.order_by('is_operated_order', '-waiting_count')
+        elif ordering == 'name':
+            return queryset.order_by('is_operated_order', 'name')
+        
+        # 디폴트: 운영 상태 + 이름 순 정렬
+        return queryset.order_by('is_operated_order', 'name')
     
     # def create(self, request, *args, **kwargs):
     #     serializer = self.get_serializer(data=request.data)
