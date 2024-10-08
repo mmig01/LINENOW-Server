@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Case, When, Value, IntegerField, Count
+from django.db.models import Case, When, Value, IntegerField, Count, Q
 from rest_framework.filters import OrderingFilter
 from .models import Booth
 from .serializers import BoothListSerializer, BoothDetailSerializer
@@ -24,7 +24,8 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
     def get_queryset(self):
         # 운영 상태에 따른 정렬 우선순위 설정 ! '운영 중 - 대기 중지 - 운영 전 - 운영종료' 순
         queryset = Booth.objects.annotate(
-            waiting_count=Count('waitings'),
+            # 'waiting', 'ready_to_confirm', 'confirmed' 상태만 카운트 !!!
+            waiting_count=Count('waitings', filter=Q(waitings__waiting_status__in=['waiting', 'ready_to_confirm', 'confirmed'])),
             is_operated_order=Case(
                 When(is_operated='operating', then=Value(1)),
                 When(is_operated='paused', then=Value(2)),
