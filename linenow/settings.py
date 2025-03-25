@@ -157,7 +157,7 @@ IS_DEPLOY = env('DJANGO_DEPLOY')
 
 # 데이터베이스 설정
 if IS_DEPLOY == 'True':
-    # 배포 환경: MySQL 사용
+    # 배포 환경: PostgreSQL 사용
     DATABASES = {
         'default': {
             'ENGINE': env('DATABASE_ENGINE'),
