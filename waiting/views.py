@@ -1,8 +1,8 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, mixins
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from .models import Waiting
-from .serializers import WaitingSerializer, WaitingDetailSerializer, WaitingCreateSerializer
+from .serializers import WaitingListSerializer, WaitingDetailSerializer
 from django.shortcuts import get_object_or_404
 from booth.models import Booth
 from accounts.models import User
@@ -14,103 +14,77 @@ from .tasks import check_confirmed
 from utils.sendmessages import sendsms
 from django.utils import timezone
 
-class WaitingViewSet(viewsets.GenericViewSet):
+# 편의를 위해서 http에서 대기 생성할 수 있도록 한 것(모든 대기)
+class WaitingViewSet(viewsets.ModelViewSet):
     queryset = Waiting.objects.all()
-    permission_classes = [IsUser]
     
     def get_serializer_class(self):
-        if self.action == 'list':
-            return WaitingSerializer
-        if self.action == 'retrieve':
-            return WaitingDetailSerializer
-        if self.action in ['create', 'register_waiting', 'cancel_waiting', 'confirm_waiting']:
-            return WaitingCreateSerializer
-        return WaitingSerializer
+        if self.action == "list":
+            return WaitingListSerializer
+        return WaitingDetailSerializer
+
+# 나의 대기
+class MyWaitingViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin):
+    queryset = Waiting.objects.all()
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return WaitingListSerializer
+        return WaitingDetailSerializer
     
     def list(self, request, *args, **kwargs):
         user = request.user
-        queryset = Waiting.objects.filter(user=user)
+        if not user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "로그인 후 이용해주세요!",
+                "code": status.HTTP_401_UNAUTHORIZED,
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        queryset = Waiting.objects.filter(user=user, waiting_status="waiting")
         serializer = self.get_serializer(queryset, many=True)
-        return custom_response(data=serializer.data, message="My Waiting list fetched successfully.", code=status.HTTP_200_OK)
-
-    def retrieve(self, request, pk=None, *args, **kwargs):
-        user = request.user
-        try:
-            waiting = Waiting.objects.get(pk=pk, user=user)
-        except Waiting.DoesNotExist:
-            raise ResourceNotFound("The requested waiting information was not found.")
-        serializer = self.get_serializer(waiting)
-        return custom_response(data=serializer.data, message="My Waiting details fetched successfully.", code=status.HTTP_200_OK)
+        return custom_response(data=serializer.data, message="대기중인 나의 대기 리스트 가져오기 성공!", code=status.HTTP_200_OK)
     
-    @action(detail=True, methods=['post'], url_path='register')
-    def register_waiting(self, request, pk=None):
-        booth = get_object_or_404(Booth, pk=pk)
+    def retrieve(self, request, *args, **kwargs):
         user = request.user
+        if not user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "로그인 후 이용해주세요!",
+                "code": status.HTTP_401_UNAUTHORIZED,
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
         
-        # 부스 상태 확인
-        if booth.is_operated != 'operating':
-            return custom_response(data=None, message="This booth is not currently operating.", code=status.HTTP_400_BAD_REQUEST, success=False)
-        
-        # 사용자가 이미 해당 부스에 대기 중인 상태인지 확인
-        existing_waiting = Waiting.objects.filter(
-            user=user,
-            booth=booth,
-            waiting_status='waiting'  # waiting 상태인 경우만 체크
-        ).exists()
-
-        if existing_waiting:
-            return custom_response(data=None, message="You already have a waiting for this booth. 욕심쥉이~", code=status.HTTP_400_BAD_REQUEST, success=False)
-        
-        # 대기가 없을 경우 새로운 대기 생성
-        serializer = self.get_serializer(data=request.data, context={'request': request})
-
-        if serializer.is_valid():
-            if not isinstance(user, User):
-                try:
-                    user = User.objects.get(pk=user.pk)
-                except User.DoesNotExist:
-                    raise CustomException("User not found.")
-            
-            serializer.save(booth=booth, user=user)
-            # 문자 메시지 발송
-            phone_number = user.phone_number
-            sendsms(phone_number, f"[라인나우] 대기가 등록되었어요 추후 입장 확정 문자를 확인해 주세요!")
-            return custom_response(data=serializer.data, message="Waiting registered successfully !", code=status.HTTP_201_CREATED)
-        
-        return custom_response(data=serializer.errors, message="Failed to register waiting.", code=status.HTTP_400_BAD_REQUEST, success=False)
-
-    @action(detail=True, methods=['post'], url_path='cancel')
-    def cancel_waiting(self, request, pk=None):
-        user = request.user
-        waiting = get_object_or_404(Waiting, pk=pk, user=user)
-        if waiting.waiting_status not in ['canceled', 'arrived']:
-            waiting.set_canceled()
-            return custom_response(message="Waiting canceled successfully.", code=status.HTTP_200_OK)
-        return custom_response(message="This waiting has already been canceled.", code=status.HTTP_400_BAD_REQUEST, success=False)
-
-    @action(detail=True, methods=['post'], url_path='confirm')
-    def confirm_waiting(self, request, pk=None):
-        user = request.user
-        waiting = get_object_or_404(Waiting, pk=pk, user=user)
-        
-        if waiting.waiting_status == 'ready_to_confirm':
-            waiting.set_confirmed()       
-            # 10분 후 check_confirmed task 호출
-            check_confirmed.apply_async((waiting.id, waiting.user.phone_number), countdown=600)  # 10분 (600초) 후 실행
-            
-            # 한 웨이팅 '입장 확정' 시 다른 웨이팅 모두 취소
-            Waiting.objects.filter(
-                user=user, 
-                waiting_status__in=['waiting', 'ready_to_confirm', 'confirmed']  # 대기 취소, 시간 초과로 인한 대기 취소, 입장 완료는 제외
-            ).exclude(pk=waiting.id).update(waiting_status='canceled', canceled_at=timezone.now()) # 현재 입장 확정 중인 건 제외하고 '대기 취소'로 상태 변경
-
-            return custom_response(message="Waiting confirmed successfully.", code=status.HTTP_200_OK)
-        return custom_response(message="Unable to confirm waiting in current status.", code=status.HTTP_400_BAD_REQUEST, success=False)
-
-    # 현재 '대기 중'인 목록만 반환하는 API
-    @action(detail=False, methods=['get'], url_path='now-waitings')
-    def waiting_list(self, request):
-        user = request.user
-        queryset = Waiting.objects.filter(user=user, waiting_status__in=['waiting','ready_to_confirm','confirmed'])
+        queryset = Waiting.objects.filter(user=user, waiting_status="waiting")
         serializer = self.get_serializer(queryset, many=True)
-        return custom_response(data=serializer.data, message="My now waiting list fetched successfully.", code=status.HTTP_200_OK)
+        return custom_response(data=serializer.data, message="대기중인 대기 상세 가져오기 성공!", code=status.HTTP_200_OK)
+    
+class MyWaitedViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+    serializer_class = WaitingListSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return Waiting.objects.none()  # 로그인하지 않은 경우 빈 QuerySet 반환
+        
+        return Waiting.objects.filter(user=user).exclude(waiting_status__in=["waiting", "not_waiting"])
+
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        if not user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "로그인 후 이용해주세요!",
+                "code": status.HTTP_401_UNAUTHORIZED,
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        
+        return custom_response(
+            data=serializer.data,
+            message="종료된 대기 리스트 가져오기 성공!",
+            code=status.HTTP_200_OK
+        )

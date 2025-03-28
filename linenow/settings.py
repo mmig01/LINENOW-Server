@@ -41,6 +41,8 @@ CSRF_TRUSTED_ORIGINS = ['https://linenow.xyz', "https://211.188.52.202"]
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -148,7 +150,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'linenow.wsgi.application'
+ASGI_APPLICATION = 'linenow.asgi.application'
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(os.environ.get('REDIS_HOST', 'localhost'), 6379, 2)],
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
