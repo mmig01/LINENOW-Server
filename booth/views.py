@@ -35,7 +35,7 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
             )
         )
         
-        # 디폴트: 운영 상태 + 이름 순 정렬
+        # 운영 상태 + 이름 순 정렬
         return queryset.order_by('is_operated_order', 'booth_name')
     
     # def create(self, request, *args, **kwargs):
