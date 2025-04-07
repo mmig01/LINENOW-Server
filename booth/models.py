@@ -37,7 +37,7 @@ class Booth(models.Model):
     
 class Booth_Menu(models.Model):
     menu_id = models.AutoField(primary_key=True)
-    booth = models.ForeignKey(Booth, on_delete=models.CASCADE, related_name="menus")
+    booth = models.ForeignKey(Booth, on_delete=models.CASCADE, related_name="booth_menus")
     menu_name = models.CharField(max_length=100, verbose_name="메뉴 이름")
     menu_price = models.IntegerField(verbose_name="메뉴 가격")
 
@@ -46,7 +46,7 @@ class Booth_Menu(models.Model):
     
 class Booth_Image(models.Model):
     booth_image_id = models.AutoField(primary_key=True)
-    booth = models.ForeignKey(Booth, on_delete=models.CASCADE, related_name="boothimages")
+    booth = models.ForeignKey(Booth, on_delete=models.CASCADE, related_name="booth_images")
     booth_image = models.ImageField(upload_to=image_upload_path, blank=True, null=True, verbose_name="사진")
     
     def __str__(self):
