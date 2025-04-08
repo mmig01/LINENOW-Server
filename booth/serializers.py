@@ -1,37 +1,36 @@
 from rest_framework import serializers
-from .models import Booth, BoothMenu, BoothImage
+from .models import Booth, Booth_Menu, Booth_Image
 from waiting.models import Waiting
 
-class BoothMenuSerializer(serializers.ModelSerializer):
+class Booth_MenuSerializer(serializers.ModelSerializer):
     class Meta:
-        model = BoothMenu
+        model = Booth_Menu
         fields = ['name', 'price']
 
 # 부스 리스트
 class BoothListSerializer(serializers.ModelSerializer):
     thumbnail = serializers.SerializerMethodField()
     # 사용자 대기 관련
-    is_waiting = serializers.SerializerMethodField()
     waiting_status = serializers.SerializerMethodField()
     # 대기 팀 수 관련
     total_waiting_teams = serializers.SerializerMethodField()
 
     class Meta:
         model = Booth
-        fields = ['id', 'name', 'description', 'location', 'is_operated', 'thumbnail', 'total_waiting_teams', 'is_waiting', 'waiting_status']
+        fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'operating_status', 'thumbnail', 'total_waiting_teams', 'waiting_status']
 
     def get_thumbnail(self, obj):
         # 첫 번째 이미지가 썸네일 ! !
         
         # 상대 경로 반환
-        # thumbnail = obj.boothimages.first()
+        # thumbnail = obj.Booth_Images.first()
         # if thumbnail:
         #     return thumbnail.image.url
         # return ''
         
         # 절대 경로 반환
         request = self.context.get('request')
-        thumbnail = obj.boothimages.first()
+        thumbnail = obj.Booth_Images.first()
         if thumbnail and request:
             return request.build_absolute_uri(thumbnail.image.url)
         return ''
@@ -39,7 +38,7 @@ class BoothListSerializer(serializers.ModelSerializer):
     def get_total_waiting_teams(self, obj):
         return Waiting.objects.filter(
             booth=obj, 
-            waiting_status__in=['waiting', 'ready_to_confirm', 'confirmed']
+            waiting_status__in=['waiting', 'entering']
         ).count()
 
     # 사용자 대기 관련 
@@ -49,7 +48,7 @@ class BoothListSerializer(serializers.ModelSerializer):
             return Waiting.objects.filter(
                 user=request.user, 
                 booth=obj,
-                waiting_status__in=['waiting', 'ready_to_confirm', 'confirmed']
+                waiting_status__in=['waiting', 'entering']
             ).exists()
         return False
 
@@ -62,15 +61,15 @@ class BoothListSerializer(serializers.ModelSerializer):
                 return waiting.waiting_status
         return None
     
-class BoothImageSerializer(serializers.ModelSerializer):
+class Booth_ImageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = BoothImage
-        fields = ['image']
+        model = Booth_Image
+        fields = ['booth_image']
 
 # 부스 디테일
 class BoothDetailSerializer(serializers.ModelSerializer):
-    menu = BoothMenuSerializer(many=True, source='menus')
-    images = BoothImageSerializer(source='boothimages', many=True)
+    menu = Booth_MenuSerializer(many=True, source='menus')
+    images = Booth_ImageSerializer(source='Booth_Images', many=True)
     # 사용자 대기 관련
     is_waiting = serializers.SerializerMethodField()
     waiting_status = serializers.SerializerMethodField()

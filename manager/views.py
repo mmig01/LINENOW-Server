@@ -13,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from utils.mixins import CustomResponseMixin
-from utils.permissions import IsAdminUser
+from utils.permissions import IsManagerUser
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import WaitingFilter
 from rest_framework.decorators import action
@@ -22,10 +22,10 @@ from utils.sendmessages import sendsms
 from django.utils import timezone
 from django.db.models import Case, When, Value, IntegerField
 
-# FAQ 리스트 조회만 가능한 ViewSet
-class FAQViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    queryset = FAQ.objects.all()
-    serializer_class = FAQSerializer
+# Ask 리스트 조회만 가능한 ViewSet
+class AskViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    queryset = Ask.objects.all()
+    serializer_class = AskSerializer
     
 # 관리자 로그인
 @method_decorator(csrf_exempt, name='dispatch')
@@ -74,7 +74,7 @@ class AdminLoginView(APIView):
 # 관리자 로그아웃
 class AdminLogoutView(APIView):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticated, IsManagerUser]
     def post(self, request):
         try:
             # 현재 User와 연결된 Admin 객체 가져오기
@@ -104,7 +104,7 @@ class AdminLogoutView(APIView):
 # 부스 웨이팅 조회
 class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticated, IsManagerUser]
     serializer_class = BoothWaitingSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = WaitingFilter
@@ -198,7 +198,7 @@ class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.Ret
 # 부스 관리 
 class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.ListModelMixin):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticated, IsManagerUser]
 
     def get_serializer_class(self):
         if self.action == 'update':
@@ -318,7 +318,7 @@ class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Re
 # 상태별 웨이팅 개수 카운트
 class WaitingCountView(APIView):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticated, IsManagerUser]
     
     def get(self, request):
         admin = self.request.admin

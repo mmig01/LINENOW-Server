@@ -24,8 +24,8 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
     def get_queryset(self):
         # 운영 상태에 따른 정렬 우선순위 설정 ! '운영 중 - 대기 중지 - 운영 전 - 운영종료' 순
         queryset = Booth.objects.annotate(
-            # 'waiting', 'ready_to_confirm', 'confirmed' 상태만 카운트 !!!
-            waiting_count=Count('waitings', filter=Q(waitings__waiting_status__in=['waiting', 'ready_to_confirm', 'confirmed'])),
+            # 'waiting', 'entering' 상태만 카운트
+            waiting_count=Count('waitings', filter=Q(waitings__waiting_status__in=['waiting', 'entering'])),
             is_operated_order=Case(
                 When(is_operated='operating', then=Value(1)),
                 When(is_operated='paused', then=Value(2)),
@@ -35,17 +35,8 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
             )
         )
         
-        # ordering 파라미터가 waiting_count일 경우 '운영 상태'로 정렬 후 '대기 순'으로 정렬
-        ordering = self.request.query_params.get('ordering')
-        if ordering == 'waiting_count':
-            return queryset.order_by('is_operated_order', 'waiting_count')
-        elif ordering == '-waiting_count':
-            return queryset.order_by('is_operated_order', '-waiting_count')
-        elif ordering == 'name':
-            return queryset.order_by('is_operated_order', 'name')
-        
-        # 디폴트: 운영 상태 + 이름 순 정렬
-        return queryset.order_by('is_operated_order', 'name')
+        # 운영 상태 + 이름 순 정렬
+        return queryset.order_by('is_operated_order', 'booth_name')
     
     # def create(self, request, *args, **kwargs):
     #     serializer = self.get_serializer(data=request.data)
@@ -58,9 +49,9 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
     def get_booth_count(self, request):
         try:
             booth_count = Booth.objects.count()
-            return custom_response({'booth_count': booth_count}, message='Booth count fetched successfully')
+            return custom_response({'booth_count': booth_count}, message='전체 부스 개수 조회 성공')
         except Exception as e:
-            return custom_response(data=None, message=str(e), code=status.HTTP_500_INTERNAL_SERVER_ERROR, success=False)
+            return custom_response(data=None, message='전체 부스 개수 조회 실패', code=status.HTTP_500_INTERNAL_SERVER_ERROR, success=False)
         
     def retrieve(self, request, *args, **kwargs):
         try:
