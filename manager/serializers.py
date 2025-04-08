@@ -1,14 +1,14 @@
-from .models import FAQ, Admin
+from .models import Ask, Manager
 from booth.models import Booth
 from rest_framework import serializers
 from waiting.models import Waiting
 from datetime import timedelta
 
 
-# FAQ Serializer
-class FAQSerializer(serializers.ModelSerializer):
+# Ask Serializer
+class AskSerializer(serializers.ModelSerializer):
     class Meta:
-        model = FAQ
+        model = Ask
         fields = '__all__'
     
 
