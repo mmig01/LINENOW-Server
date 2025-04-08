@@ -5,8 +5,8 @@ from .views import *
 
 app_name = 'manager'
 
-faq_router = routers.SimpleRouter(trailing_slash=False)
-faq_router.register(r'faqs', FAQViewSet, basename='faqs')
+ask_router = routers.SimpleRouter(trailing_slash=False)
+ask_router.register(r'asks', AskViewSet, basename='asks')
 
 booth_waiting_router = routers.SimpleRouter(trailing_slash=False)
 booth_waiting_router.register(r'waitings', BoothWaitingViewSet, basename='waitings')
@@ -15,7 +15,7 @@ booth_detail_router = routers.SimpleRouter(trailing_slash=False)
 booth_detail_router.register(r'booth', BoothDetailViewSet, basename='booth')
 
 urlpatterns = [
-    path('', include(faq_router.urls)),
+    path('', include(ask_router.urls)),
     path('manager/', include(booth_waiting_router.urls)),
     path('manager/', include(booth_detail_router.urls)),
     path('manager/login', AdminLoginView.as_view(), name='admin_login'),
