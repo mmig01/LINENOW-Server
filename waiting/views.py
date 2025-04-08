@@ -14,6 +14,9 @@ from .tasks import check_confirmed
 from utils.sendmessages import sendsms
 from django.utils import timezone
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
 # 편의를 위해서 http에서 대기 생성할 수 있도록 한 것(모든 대기)
 class WaitingViewSet(viewsets.ModelViewSet):
     queryset = Waiting.objects.all()
@@ -22,6 +25,81 @@ class WaitingViewSet(viewsets.ModelViewSet):
         if self.action == "list":
             return WaitingListSerializer
         return WaitingDetailSerializer
+    
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        if not user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "로그인 후 이용해주세요!",
+                "code": status.HTTP_401_UNAUTHORIZED,
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        booth_id = request.data.get('booth_id')
+        person_num = request.data.get('person_num')
+
+        if not booth_id:
+            return Response({
+                "status": "error",
+                "message": "부스 ID가 필요합니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        booth = get_object_or_404(Booth, booth_id=booth_id)
+
+        # 중복 대기 방지 (선택)
+        existing_waiting = Waiting.objects.filter(user=user, booth=booth, waiting_status="waiting").first()
+        if existing_waiting:
+            return Response({
+                "status": "error",
+                "message": "이미 대기 중입니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 대기 생성
+        waiting = Waiting.objects.create(
+            user=user,
+            booth=booth,
+            person_num=person_num,
+            waiting_status="waiting",
+        )
+
+        channel_layer = get_channel_layer()
+        admin_group_name = f"booth_{booth.id}_admin"  # consumer에서도 이 이름 썼을 거라 가정
+        async_to_sync(channel_layer.group_send)(
+            admin_group_name,
+            {
+                'type': 'send_to_admin',  # consumer 쪽의 handler 함수 이름 (ex: def send_to_admin(self, event))
+                'status': 'success',
+                'message': '사용자가 새로운 대기를 등록했습니다.',
+                'code': 200,
+                'data': {
+                    'action': 'create',
+                    'waiting_id': waiting.waiting_id,
+                    'waiting_num': waiting.waiting_num,
+                    'person_num': waiting.person_num,
+                    'waiting_status': waiting.waiting_status,
+                    'created_at': waiting.created_at.isoformat(),
+                    'confirmed_at': waiting.confirmed_at.isoformat() if waiting.confirmed_at else None,
+                    'canceled_at': waiting.canceled_at.isoformat() if waiting.canceled_at else None,
+                    'user_info': {
+                        'user_name': user.username,  # request.user 기준
+                        'user_phone': user.phone_number,  # 필요에 따라 수정
+                    }
+                }
+            }
+        )
+
+        serializer = WaitingDetailSerializer(waiting)
+
+        return custom_response(
+            data=serializer.data,
+            message="대기 신청이 완료되었습니다!",
+            code=status.HTTP_201_CREATED
+        )
 
 # 나의 대기
 class MyWaitingViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin):
