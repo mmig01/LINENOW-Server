@@ -8,6 +8,6 @@ class MenuAdmin(admin.ModelAdmin):
         return f'{int(obj.menu_price):,}원'
     formatted_price.short_description = '가격'
     
-admin.site.register(Booth_Menu, MenuAdmin)
+admin.site.register(BoothMenu, MenuAdmin)
 admin.site.register(Booth)
-admin.site.register(Booth_Image)
+admin.site.register(BoothImage)

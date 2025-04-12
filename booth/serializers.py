@@ -1,15 +1,15 @@
 from rest_framework import serializers
-from .models import Booth, Booth_Menu, Booth_Image
+from .models import Booth, BoothMenu, BoothImage
 from waiting.models import Waiting
 
-class Booth_MenuSerializer(serializers.ModelSerializer):
+class BoothMenuSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Booth_Menu
+        model = BoothMenu
         fields = ['menu_id', 'menu_name', 'menu_price']
 
-class Booth_ImageSerializer(serializers.ModelSerializer):
+class BoothImageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Booth_Image
+        model = BoothImage
         fields = ['booth_image_id', 'booth_image']
 
 class BoothListSerializer(serializers.ModelSerializer):
@@ -23,7 +23,7 @@ class BoothListSerializer(serializers.ModelSerializer):
         # 첫 번째 이미지가 썸네일
         
         # 상대 경로 반환
-        # thumbnail = obj.Booth_Images.first()
+        # thumbnail = obj.BoothImages.first()
         # if thumbnail:
         #     return thumbnail.image.url
         # return ''
@@ -70,8 +70,8 @@ class BoothWaitingListSerializer(serializers.ModelSerializer):
         return None
 
 class BoothDetailSerializer(serializers.ModelSerializer):
-    menu_info = Booth_MenuSerializer(many=True, source='booth_menus')
-    booth_image_info = Booth_ImageSerializer(source='booth_images', many=True)
+    menu_info = BoothMenuSerializer(many=True, source='booth_menus')
+    booth_image_info = BoothImageSerializer(source='booth_images', many=True)
 
     class Meta:
         model = Booth
