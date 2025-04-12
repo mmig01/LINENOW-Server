@@ -68,7 +68,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
         )
 
         channel_layer = get_channel_layer()
-        admin_group_name = f"booth_{booth.id}_admin"  # consumer에서도 이 이름 썼을 거라 가정
+        admin_group_name = f"booth_{booth.booth_id}_admin"
         async_to_sync(channel_layer.group_send)(
             admin_group_name,
             {
@@ -100,8 +100,9 @@ class WaitingViewSet(viewsets.ModelViewSet):
             message="대기 신청이 완료되었습니다!",
             code=status.HTTP_201_CREATED
         )
+    
 
-# 나의 대기
+# 나의 대기 - 대기중
 class MyWaitingViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin):
     queryset = Waiting.objects.all()
 
@@ -138,6 +139,7 @@ class MyWaitingViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Re
         serializer = self.get_serializer(queryset, many=True)
         return custom_response(data=serializer.data, message="대기중인 대기 상세 가져오기 성공!", code=status.HTTP_200_OK)
     
+# 나의 대기 - 대기 종료
 class MyWaitedViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
     serializer_class = WaitingListSerializer
 
