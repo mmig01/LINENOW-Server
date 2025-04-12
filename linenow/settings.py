@@ -119,8 +119,6 @@ SIMPLE_JWT = {
     'TOKEN_USER_CLASS': "accounts.models.User",
 }
 
-ACCOUNT_ADAPTER = 'accounts.adapters.CustomUserAccountAdapter'
-
 MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
     'django.middleware.security.SecurityMiddleware',
