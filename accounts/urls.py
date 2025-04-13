@@ -1,11 +1,15 @@
 # myapp/urls.py
+from django.db import router
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import UserViewSet
+from rest_framework import routers
+from .views import UserViewSet, SMSViewSet
 app_name = 'accounts'
-router = DefaultRouter()
-router.register('accounts', UserViewSet, basename='accounts')
+accounts_router = routers.SimpleRouter(trailing_slash=False)
+accounts_router.register('accounts', UserViewSet, basename='accounts')
 
+sms_router = routers.SimpleRouter(trailing_slash=False)
+sms_router.register('', SMSViewSet, basename='sms-auth')
 urlpatterns = [
-    path('', include(router.urls)),
+    path('', include(accounts_router.urls)),
+    path('accounts/registration/', include(sms_router.urls)),
 ]

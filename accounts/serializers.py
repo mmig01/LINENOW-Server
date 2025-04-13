@@ -1,6 +1,5 @@
 from rest_framework import serializers
-from django.contrib.auth.hashers import make_password
-from .models import User
+from .models import User, SMSAuthenticate
 
 class UserSerializer(serializers.ModelSerializer):
     # 프론트엔드에서 입력받는 필드: 패스워드 2개와 sms_code
@@ -30,3 +29,8 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+    
+class SMSAuthenticateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SMSAuthenticate
+        fields = ['sms_code']

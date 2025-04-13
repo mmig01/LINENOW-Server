@@ -48,3 +48,22 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.user_phone
+    
+from django.db import models
+from django.utils import timezone
+
+class SMSAuthenticate(models.Model):
+    user_phone = models.CharField(max_length=20, help_text="인증 받을 전화번호")
+    sms_code = models.CharField(max_length=6, help_text="문자인증 코드")
+    created_at = models.DateTimeField(auto_now_add=True, help_text="인증 코드 발송 시각")
+
+    def __str__(self):
+        return f"{self.user_phone} - {self.sms_code}"
+
+    def is_expired(self):
+        """
+        인증 코드의 유효기간을 체크합니다. (예: 1분)
+        """
+        now = timezone.now()
+        expiration_time = self.created_at + timezone.timedelta(minutes=1)
+        return now > expiration_time
