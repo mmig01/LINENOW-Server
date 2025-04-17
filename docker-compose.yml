@@ -1,79 +1,71 @@
+version: '3.8'
+
 services:
-  db:
-    image: mysql:8.0
-    container_name: linenow-db
+  ## PostgreSQL 데이터베이스
+  linenow_db:
+    image: postgres:latest
+    container_name: linenow_db
+    restart: unless-stopped
+    env_file: .env
     environment:
-      MYSQL_ROOT_PASSWORD: ${DATABASE_USER_PASSWORD}
-      MYSQL_DATABASE: ${DATABASE_NAME}
-      MYSQL_USER: ${DATABASE_USER}
-      MYSQL_PASSWORD: ${DATABASE_USER_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
-      - ./mysql_data:/var/lib/mysql
+      - pgdata:/var/lib/postgresql/data
     ports:
-      - "3306:3306"
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
 
-  redis:
-    image: redis:6.0
-    container_name: linenow-redis
-    volumes:
-      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
-      - ./redis/data:/data  # 데이터 저장 경로 마운트
-    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
-    ports:
-      - "6379:6379"
-    networks:
-      - app-network
-
-  celery:
-    build: .
-    container_name: linenow-celery
-    command: celery -A linenow worker --loglevel=info
+  ## Blue 환경
+  linenow_backend_blue:
+    image: your_dockerhub_user/your_repo:blue
+    container_name: linenow_backend_blue
+    restart: unless-stopped
+    env_file: .env
     depends_on:
-      - redis
-      - db
+      linenow_db:
+        condition: service_healthy
     networks:
       - app-network
-    environment:
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
-    restart: on-failure
-    user: "1000:1000"  # 비루트 사용자로 실행
 
-  web:
-    build: .
-    container_name: linenow-was
-    command: gunicorn linenow.wsgi:application --bind 0.0.0.0:8000
-    volumes:
-      - ./staticfiles:/app/staticfiles   # 정적 파일 공유
-      - ./media:/app/media               # 미디어 파일 공유
+  ## Green 환경
+  linenow_backend_green:
+    image: your_dockerhub_user/your_repo:green
+    container_name: linenow_backend_green
+    restart: unless-stopped
+    env_file: .env
     depends_on:
-      - db
+      linenow_db:
+        condition: service_healthy
     networks:
       - app-network
-    environment:
-      - DB_HOST=${DB_HOST}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
 
+  ## Nginx 리버스 프록시
   nginx:
-    image: nginx:latest
-    container_name: linenow-ws
+    image: nginx:stable-alpine
+    container_name: linenow_nginx
+    restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"  # HTTPS 포트 추가
+      - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./staticfiles:/app/staticfiles   # Nginx에서 정적 파일 접근 가능
-      - ./media:/app/media               # 미디어 파일 접근 가능
-      - /etc/letsencrypt/live/linenow.xyz:/etc/letsencrypt/live/linenow.xyz:ro  # SSL 인증서 공유 (읽기 전용)
-      - /etc/letsencrypt/archive/linenow.xyz:/etc/letsencrypt/archive/linenow.xyz:ro  # SSL 인증서 저장소 공유
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./staticfiles:/app/staticfiles:ro
+      - ./media:/app/media:ro
     depends_on:
-      - web
+      - linenow_backend_blue
     networks:
       - app-network
+
+volumes:
+  pgdata:
 
 networks:
   app-network:
