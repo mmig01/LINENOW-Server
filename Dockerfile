@@ -1,21 +1,40 @@
-FROM python:3.12-slim
+# 1. Python 3.13 기반 Docker 이미지 사용
+FROM python:3.13
 
-# 필수 패키지 설치
-RUN apt-get update && apt-get install -y \
-    gcc \
-    default-libmysqlclient-dev \
-    pkg-config
+# 2. 작업 디렉토리 설정
+WORKDIR /
 
-# 작업 디렉토리 설정
-WORKDIR /app
+# 3. 빌드 시 환경 변수 전달받기
+ARG SECRET_KEY
+ARG DEBUG
+ARG DJANGO_DEPLOY
+ARG DB_ENGINE
+ARG DB_NAME
+ARG DB_USER
+ARG DB_PASSWORD
+ARG DB_HOST
+ARG DB_PORT
 
-# requirements.txt 복사 및 패키지 설치
-COPY ./requirements.txt /app/requirements.txt
-RUN pip install --upgrade pip
-RUN pip install -r /app/requirements.txt
+# 4. 환경 변수를 Docker 컨테이너 내부에 설정
+ENV SECRET_KEY=${SECRET_KEY}
+ENV DEBUG=${DEBUG}
+ENV DJANGO_DEPLOY=${DJANGO_DEPLOY}
+ENV DB_ENGINE=${DB_ENGINE}
+ENV DB_NAME=${DB_NAME}
+ENV DB_USER=${DB_USER}
+ENV DB_PASSWORD=${DB_PASSWORD}
+ENV DB_HOST=${DB_HOST}
+ENV DB_PORT=${DB_PORT}
 
-# 프로젝트 전체 복사
-COPY . /app
+# 5. 로컬의 Django 프로젝트 파일을 컨테이너 내부로 복사
+COPY . /
 
-# makemigrations, migrate 실행 후 Gunicorn 시작
-CMD ["sh", "-c", "python manage.py makemigrations --noinput && python manage.py migrate --noinput && gunicorn linenow.wsgi:application --bind 0.0.0.0:8000"]
+# 6. 패키지 설치
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+# 7. Django 정적 파일 수집 및 마이그레이션 (빌드 시)
+RUN python manage.py collectstatic --noinput
+RUN python manage.py migrate
+
+# 8. Gunicorn 실행 (Django 서버 실행)
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "linenow.wsgi:application"]

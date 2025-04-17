@@ -238,13 +238,13 @@ class SMSViewSet(viewsets.ViewSet):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         # 실제 SMS 전송 로직은 SMS API(예: Twilio, 다우기술, 등)를 호출하는 코드를 작성해야 합니다.
         # 여기서는 예시로 콘솔에 출력하도록 합니다.
-        print(f"전화번호 {user_phone}로 문자인증 코드 {sms_code} 전송")
+        print(f"전화번호 {user_phone}로 문자인증 코드  전송")
         
         return Response({
             "status": "success",
             "message": "문자인증 코드가 전송되었습니다.",
             "code": 200,
-            "data": [{"detail": f"{user_phone}로 인증 코드가 전송되었습니다."}]
+            "data": [{"sms_code": f"{sms_code}"}]
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], url_path='verify')
