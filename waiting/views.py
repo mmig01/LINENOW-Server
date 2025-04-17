@@ -48,6 +48,8 @@ class WaitingViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         booth = get_object_or_404(Booth, booth_id=booth_id)
+        booth.current_watiting_num += 1
+        booth.save()
 
         # 중복 대기 방지 (선택)
         existing_waiting = Waiting.objects.filter(user=user, booth=booth, waiting_status="waiting").first()
@@ -64,37 +66,46 @@ class WaitingViewSet(viewsets.ModelViewSet):
             user=user,
             booth=booth,
             person_num=person_num,
+            waiting_num = booth.current_watiting_num,
             waiting_status="waiting",
         )
 
-        channel_layer = get_channel_layer()
-        admin_group_name = f"booth_{booth.booth_id}_admin"
-        async_to_sync(channel_layer.group_send)(
-            admin_group_name,
-            {
-                'type': 'send_to_admin',  # consumer 쪽의 handler 함수 이름 (ex: def send_to_admin(self, event))
-                'status': 'success',
-                'message': '사용자가 새로운 대기를 등록했습니다.',
-                'code': 200,
-                'data': {
-                    'action': 'create',
-                    'waiting_id': waiting.waiting_id,
-                    'waiting_num': waiting.waiting_num,
-                    'person_num': waiting.person_num,
-                    'waiting_status': waiting.waiting_status,
-                    'created_at': waiting.created_at.isoformat(),
-                    'confirmed_at': waiting.confirmed_at.isoformat() if waiting.confirmed_at else None,
-                    'canceled_at': waiting.canceled_at.isoformat() if waiting.canceled_at else None,
-                    'user_info': {
-                        'user_name': user.username,  # request.user 기준
-                        'user_phone': user.phone_number,  # 필요에 따라 수정
+        try:
+            channel_layer = get_channel_layer()
+            admin_group_name = f"booth_{booth.booth_id}_admin"
+            print('Sending websocket message:', admin_group_name)
+            async_to_sync(channel_layer.group_send)(
+                admin_group_name,
+                {
+                    'type': 'send_to_admin',  # consumer 쪽의 handler 함수 이름 (ex: def send_to_admin(self, event))
+                    'status': 'success',
+                    'message': '사용자가 새로운 대기를 등록했습니다.',
+                    'code': 200,
+                    'data': {
+                        'action': 'create',
+                        'waiting_id': waiting.waiting_id,
+                        'waiting_num': waiting.waiting_num,
+                        'person_num': waiting.person_num,
+                        'waiting_status': waiting.waiting_status,
+                        'created_at': waiting.created_at.isoformat(),
+                        'confirmed_at': waiting.confirmed_at.isoformat() if waiting.confirmed_at else None,
+                        'canceled_at': waiting.canceled_at.isoformat() if waiting.canceled_at else None,
+                        'user_info': {
+                            'user_name': user.user_name,  # request.user 기준
+                            'user_phone': user.user_phone,  # 필요에 따라 수정
+                        }
                     }
                 }
-            }
-        )
+            )
+        except Exception as e:
+            print("WebSocket send error:", str(e))
 
-        serializer = WaitingDetailSerializer(waiting)
-
+        try:
+            serializer = WaitingDetailSerializer(waiting)
+            print("serializer.data:", serializer.data)  # 🔥 이거 추가
+        except Exception as e:
+            print("Serializer Error:", str(e))
+            raise e
         return custom_response(
             data=serializer.data,
             message="대기 신청이 완료되었습니다!",

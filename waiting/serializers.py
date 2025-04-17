@@ -77,6 +77,7 @@ class WaitingListSerializer(serializers.ModelSerializer):
 
 
 class WaitingDetailSerializer(serializers.ModelSerializer):
+    booth_info = serializers.SerializerMethodField()
     waiting_team_ahead = serializers.SerializerMethodField()
 
     class Meta:

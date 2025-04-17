@@ -20,6 +20,7 @@ class Waiting(models.Model):
     booth = models.ForeignKey(Booth, on_delete=models.CASCADE, related_name='waitings')
     person_num = models.IntegerField(verbose_name="인원 수")
     
+    waiting_num = models.IntegerField(verbose_name="대기 번호")
     waiting_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='waiting', verbose_name="대기 상태")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="대기 생성 시간")  # 웨이팅 등록 시간을 위한 필드 추가 !!
     confirmed_at = models.DateTimeField(null=True, blank=True, verbose_name="대기 호출 시간")
