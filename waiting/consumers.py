@@ -2,6 +2,7 @@ from collections import defaultdict
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
+from urllib.parse import parse_qs
 
 from .models import Waiting
 from booth.models import Booth, BoothImage
@@ -11,8 +12,13 @@ User = get_user_model()
 class WaitingConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         try:
+            self.user = self.scope["user"]
+
             self.booth_id = self.scope['url_route']['kwargs']['booth_id']
-            self.user_type = self.scope["query_string"].decode("utf-8")  # "admin" or "user"
+            query_params = parse_qs(self.scope["query_string"].decode("utf-8"))
+            self.user_type = query_params.get("user_type", ["user"])[0]  # "admin" or "user"
+
+            print("user_type:", self.user_type)
 
             self.admin_group_name = f"booth_{self.booth_id}_admin"
             self.user_group_name = f"booth_{self.booth_id}_users"
