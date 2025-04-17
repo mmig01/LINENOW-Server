@@ -36,7 +36,7 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ['*']
-CSRF_TRUSTED_ORIGINS = ['https://linenow.xyz', "https://211.188.52.202"]
+CSRF_TRUSTED_ORIGINS = ['https://linenow-backend.store', 'http://127.0.0.1:8000']
 
 # Application definition
 
@@ -170,12 +170,12 @@ if IS_DEPLOY == 'True':
     # 배포 환경: PostgreSQL 사용
     DATABASES = {
         'default': {
-            'ENGINE': env('DATABASE_ENGINE'),
-            'NAME': env('DATABASE_NAME'),
-            'USER': env('DATABASE_USER'),
-            'PASSWORD': env('DATABASE_USER_PASSWORD'),
-            'HOST': env('DATABASE_HOST'),
-            'PORT': env('DATABASE_PORT')
+            'ENGINE': env('DB_ENGINE'),
+            'NAME': env('DB_NAME'),
+            'USER': env('DB_USER'),
+            'PASSWORD': env('DB_PASSWORD'),
+            'HOST': env('DB_HOST'),
+            'PORT': env('DB_PORT'),
         }
     }
 else:
@@ -250,27 +250,16 @@ CORS_ALLOWED_ORIGINS = [
     # 프론트엔드 도메인 또는 IP주소
     
     # 백엔드 도메인 또는 IP주소
-    'https://211.188.52.202',
-    'https://linenow.xyz',
-    'http://linenow-manager.co.kr',
-    'https://linenow-manager.co.kr',
-    'http://linenow.co.kr',
-    'https://linenow.co.kr'
+    'https://linenow-backend.store',
 ]
 
-# Celery 관련 설정
-CELERY_BROKER_URL = env('CELERY_BROKER_URL')  # Redis 브로커 주소
-CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')  # 결과 백엔드 주소
 
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-
-# SMS 관련 설정
-SMS_TOKEN_KEY = env("SMS_TOKEN_KEY")
-SMS_API_KEY = env("SMS_API_KEY")
-SEND_PHONE = env("SEND_PHONE")
-SSODAA_BASE_URL = env("SSODAA_BASE_URL")
-
-# Turnstile 관련 설정
-TURNSTILE_SECRET_KEY = env("TURNSTILE_SECRET_KEY")
+# # SMS 관련 설정
+# SMS_TOKEN_KEY = env("SMS_TOKEN_KEY")
+# SMS_API_KEY = env("SMS_API_KEY")
+# SEND_PHONE = env("SEND_PHONE")
+# SSODAA_BASE_URL = "env("SSODAA_BASE_URL")"
+SSODAA_BASE_URL = ""
+SMS_TOKEN_KEY = ""
+SMS_API_KEY = ""
+SEND_PHONE = ""
