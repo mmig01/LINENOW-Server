@@ -1,12 +1,14 @@
 name: Deploy to AWS EC2
 
 on:
-  push:
+  pull_request:
+    types: [closed]   # PR이 닫힐 때 (머지 또는 리젝)
     branches:
-      - main  # 🚀 main 브랜치에 push되면 실행
+      - main         # 대상으로 main 브랜치인 PR만 감지
 
 jobs:
   deploy:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
