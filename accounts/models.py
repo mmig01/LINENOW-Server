@@ -54,7 +54,7 @@ from django.utils import timezone
 
 class SMSAuthenticate(models.Model):
     user_phone = models.CharField(max_length=20, help_text="인증 받을 전화번호")
-    sms_code = models.CharField(max_length=6, help_text="문자인증 코드")
+    sms_code = models.TextField(help_text="문자인증 코드")
     created_at = models.DateTimeField(auto_now_add=True, help_text="인증 코드 발송 시각")
 
     def __str__(self):
