@@ -1,5 +1,7 @@
 from django.utils import timezone
 import random
+import os
+import requests
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -220,15 +222,38 @@ class SMSViewSet(viewsets.ViewSet):
                 "data": [{"detail": "전화번호가 필요합니다."}]
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # 랜덤 6자리 숫자 생성
-        sms_code = f"{random.randint(0, 99999):05}"
-        sms_code = str(sms_code).zfill(5)  
         # SMSAuthenticate 객체 생성 또는 업데이트
         try:
+            sms_token_key = os.getenv("SMS_TOKEN_KEY")
+            sms_api_key = os.getenv("SMS_API_KEY")
+            send_phone = os.getenv("SEND_PHONE")
+            ssodaa_base_url = os.getenv("SSODAA_BASE_URL")
+            sms_code = str(random.randint(10000, 99999))
+            payload = {
+                'token_key': sms_token_key,
+                'msg_type': 'SMS',
+                'dest_phone': user_phone,
+                'send_phone': send_phone,
+                'msg_body': f"라인나우 인증코드: {sms_code}",
+            }
+            headers = {
+                'x-api-key': sms_api_key,
+                'Content-Type': 'application/json; charset=utf-8'
+            }
+            
+            response = requests.post(
+                ssodaa_base_url	+ "/sms/send/sms",   # 
+                json=payload,      # JSON body
+                headers=headers,   # 인증 헤더
+                timeout=5          # 과도한 지연 방지용 타임아웃 
+            )
+            response.raise_for_status()  # 200 이외 코드는 예외 발생
+            
             SMSAuthenticate.objects.update_or_create(
                 user_phone=user_phone,
                 defaults={'sms_code': sms_code, 'created_at': timezone.now()}
             )
+            
         except Exception as e:
             return Response({
                 "status": "error",
@@ -236,52 +261,51 @@ class SMSViewSet(viewsets.ViewSet):
                 "code": 500,
                 "data": [{"detail": str(e)}]
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        # 실제 SMS 전송 로직은 SMS API(예: Twilio, 다우기술, 등)를 호출하는 코드를 작성해야 합니다.
-        # 여기서는 예시로 콘솔에 출력하도록 합니다.
-        print(f"전화번호 {user_phone}로 문자인증 코드  전송")
         
         return Response({
             "status": "success",
             "message": "문자인증 코드가 전송되었습니다.",
             "code": 200,
-            "data": [{"sms_code": f"{sms_code}"}]
         }, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['post'], url_path='verify')
-    def verify_sms(self, request):
-        user_phone = request.data.get('user_phone')
-        sms_code = request.data.get('sms_code')
-        if not user_phone or not sms_code:
-            return Response({
-                "status": "error",
-                "message": "문자인증 실패",
-                "code": 400,
-                "data": [{"detail": "전화번호와 인증 코드가 필요합니다."}]
-            }, status=status.HTTP_400_BAD_REQUEST)
+    '''
+    아래 코드는 사용하지 않음.
+    '''
+    # @action(detail=False, methods=['post'], url_path='verify')
+    # def verify_sms(self, request):
+    #     user_phone = request.data.get('user_phone')
+    #     sms_code = request.data.get('sms_code')
+    #     if not user_phone or not sms_code:
+    #         return Response({
+    #             "status": "error",
+    #             "message": "문자인증 실패",
+    #             "code": 400,
+    #             "data": [{"detail": "전화번호와 인증 코드가 필요합니다."}]
+    #         }, status=status.HTTP_400_BAD_REQUEST)
         
-        try:
-            # 해당 전화번호의 가장 최근 인증 기록을 가져옵니다.
-            sms_obj = SMSAuthenticate.objects.filter(user_phone=user_phone).latest('created_at')
-        except SMSAuthenticate.DoesNotExist:
-            return Response({
-                "status": "error",
-                "message": "문자인증 실패",
-                "code": 404,
-                "data": [{"detail": "해당 전화번호의 인증 기록이 존재하지 않습니다."}]
-            }, status=status.HTTP_404_NOT_FOUND)
+    #     try:
+    #         # 해당 전화번호의 가장 최근 인증 기록을 가져옵니다.
+    #         sms_obj = SMSAuthenticate.objects.filter(user_phone=user_phone).latest('created_at')
+    #     except SMSAuthenticate.DoesNotExist:
+    #         return Response({
+    #             "status": "error",
+    #             "message": "문자인증 실패",
+    #             "code": 404,
+    #             "data": [{"detail": "해당 전화번호의 인증 기록이 존재하지 않습니다."}]
+    #         }, status=status.HTTP_404_NOT_FOUND)
         
-        # 인증 코드가 일치하고 만료되지 않았는지 검사 (여기서는 5분 유효기간)
-        if sms_obj.sms_code == sms_code and not sms_obj.is_expired():
-            return Response({
-                "status": "success",
-                "message": "문자인증 성공",
-                "code": 200,
-                "data": [{"detail": "인증이 완료되었습니다."}]
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({
-                "status": "error",
-                "message": "문자인증 실패",
-                "code": 400,
-                "data": [{"detail": "문자인증 코드가 올바르지 않거나 만료되었습니다."}]
-            }, status=status.HTTP_400_BAD_REQUEST)
+    #     # 인증 코드가 일치하고 만료되지 않았는지 검사 (여기서는 5분 유효기간)
+    #     if sms_obj.sms_code == sms_code and not sms_obj.is_expired():
+    #         return Response({
+    #             "status": "success",
+    #             "message": "문자인증 성공",
+    #             "code": 200,
+    #             "data": [{"detail": "인증이 완료되었습니다."}]
+    #         }, status=status.HTTP_200_OK)
+    #     else:
+    #         return Response({
+    #             "status": "error",
+    #             "message": "문자인증 실패",
+    #             "code": 400,
+    #             "data": [{"detail": "문자인증 코드가 올바르지 않거나 만료되었습니다."}]
+    #         }, status=status.HTTP_400_BAD_REQUEST)

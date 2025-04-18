@@ -36,7 +36,14 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ['*']
-CSRF_TRUSTED_ORIGINS = ['https://linenow-backend.store', 'http://127.0.0.1:8000']
+
+# SMS 관련 설정
+SMS_TOKEN_KEY = env("SMS_TOKEN_KEY")
+SMS_API_KEY = env("SMS_API_KEY")
+SEND_PHONE = env("SEND_PHONE")
+SSODAA_BASE_URL = env("SSODAA_BASE_URL")
+
+CSRF_TRUSTED_ORIGINS = ['https://linenow-backend.store', 'http://127.0.0.1:8000', SSODAA_BASE_URL]
 
 # Application definition
 
@@ -251,11 +258,8 @@ CORS_ALLOWED_ORIGINS = [
     
     # 백엔드 도메인 또는 IP주소
     'https://linenow-backend.store',
+    SSODAA_BASE_URL,
 ]
 
 
-# SMS 관련 설정
-SMS_TOKEN_KEY = env("SMS_TOKEN_KEY")
-SMS_API_KEY = env("SMS_API_KEY")
-SEND_PHONE = env("SEND_PHONE")
-SSODAA_BASE_URL = env("SSODAA_BASE_URL")
+
