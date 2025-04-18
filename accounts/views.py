@@ -2,6 +2,7 @@ from django.utils import timezone
 import random
 import os
 import requests
+import hashlib
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -28,7 +29,7 @@ class UserViewSet(viewsets.ViewSet):
             validated_data = serializer.validated_data
             user_phone = validated_data.get('user_phone')
             provided_sms_code = validated_data.get('sms_code')
-
+            privided_sms_code_hash = hashlib.sha256(provided_sms_code.encode('utf-8')).hexdigest()
             # SMS 인증 코드 유효성 검사
             try:
                 # 해당 전화번호의 최신 인증 기록을 가져옵니다.
@@ -42,7 +43,7 @@ class UserViewSet(viewsets.ViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             # 인증 코드 일치와 유효 기간(예: 1분 이내) 검사
-            if sms_instance.sms_code != provided_sms_code or sms_instance.is_expired():
+            if sms_instance.sms_code != privided_sms_code_hash or sms_instance.is_expired():
                 return Response({
                     "status": "error",
                     "message": "문자인증 실패",
@@ -229,6 +230,7 @@ class SMSViewSet(viewsets.ViewSet):
             send_phone = os.getenv("SEND_PHONE")
             ssodaa_base_url = os.getenv("SSODAA_BASE_URL")
             sms_code = str(random.randint(10000, 99999))
+
             payload = {
                 'token_key': sms_token_key,
                 'msg_type': 'SMS',
@@ -251,7 +253,7 @@ class SMSViewSet(viewsets.ViewSet):
             
             SMSAuthenticate.objects.update_or_create(
                 user_phone=user_phone,
-                defaults={'sms_code': sms_code, 'created_at': timezone.now()}
+                defaults={'sms_code': hashlib.sha256(sms_code.encode('utf-8')).hexdigest(), 'created_at': timezone.now()}
             )
             
         except Exception as e:
