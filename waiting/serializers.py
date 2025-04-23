@@ -79,6 +79,7 @@ class WaitingListSerializer(serializers.ModelSerializer):
 class WaitingDetailSerializer(serializers.ModelSerializer):
     booth_info = serializers.SerializerMethodField()
     waiting_team_ahead = serializers.SerializerMethodField()
+    total_waiting_teams = serializers.SerializerMethodField()
 
     class Meta:
         model = Waiting
@@ -87,6 +88,7 @@ class WaitingDetailSerializer(serializers.ModelSerializer):
             'waiting_num',
             'person_num',
             'waiting_team_ahead',
+            'total_waiting_teams',
             'waiting_status',
             'booth_info',
             'created_at',
@@ -101,6 +103,12 @@ class WaitingDetailSerializer(serializers.ModelSerializer):
             waiting_status='waiting'
         ).count()
     
+    def get_total_waiting_teams(self, obj):
+        return Waiting.objects.filter(
+            booth=obj.booth,
+            waiting_status='waiting'
+        ).count()
+
     def get_booth_info(self, obj):
         request = self.context.get('request')
         return WaitingBoothDetailSerializer(obj.booth, context={'request': request}).data
