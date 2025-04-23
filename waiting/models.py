@@ -31,7 +31,7 @@ class Waiting(models.Model):
     # updated_at = models.DateTimeField(auto_now=True, verbose_name="대기 업데이트 시간")
     
     def __str__(self):
-        return f'Waiting {self.waiting_id} - {self.booth.name} - {self.user.username}'
+        return f'Waiting {self.waiting_id} - {self.booth.booth_name} - {self.user.user_phone}'
     
     def save(self, *args, **kwargs):
         if self.waiting_status == 'entered' and self.confirmed_at:

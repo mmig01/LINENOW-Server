@@ -18,7 +18,7 @@ class Manager(models.Model):
     booth = models.OneToOneField(Booth, on_delete=models.CASCADE, related_name='manager')
 
     def __str__(self):
-        return f'{self.booth.name} 관리자'
+        return f'{self.booth.booth_name} 관리자'
     
     def save(self, *args, **kwargs):
         # 새로운 manager 객체일 때, User 객체도 생성
@@ -28,7 +28,7 @@ class Manager(models.Model):
 
             # User 객체 생성 (username은 manager_code 기반, 비밀번호는 랜덤)
             user = User.objects.create_user(
-                username=f"manager_{self.booth.name}",
+                username=f"manager_{self.booth.booth_name}",
                 password=random_password  # 랜덤 비밀번호 설정
             )
             self.user = user

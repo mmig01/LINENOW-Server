@@ -11,7 +11,12 @@ from utils.responses import custom_response
 from utils.exceptions import *
 
 class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.ListModelMixin):
-    # queryset = Booth.objects.all()
+    """
+    - GET   /booths                 -> 부스 목록(가나다순)
+    - GET   /booths/count           -> 전체 부스 개수
+    - GET   /booths/location        -> 부스 위치 목록
+    - GET   /booths/{pk}            -> 부스 상세
+    """
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -19,11 +24,8 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
         return BoothDetailSerializer 
     
     def get_queryset(self):
-
-        # 운영 상태에 따른 정렬 우선순위 설정 ! '운영 중 - 대기 중지 - 운영 전 - 운영종료' 순
+        # '운영중 - 대기중지 - 운영전 - 운영종료' + 가나다 순서로 정렬
         queryset = Booth.objects.annotate(
-            # 'waiting', 'entering' 상태만 카운트
-            # waiting_count=Count('waitings', filter=Q(waitings__waiting_status__in=['waiting', 'entering'])),
             operating_status_order=Case(
                 When(operating_status='operating', then=Value(1)),
                 When(operating_status='paused', then=Value(2)),
@@ -32,53 +34,85 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
                 output_field=IntegerField()
             )
         )
-
-        # 운영 상태 + 이름 순 정렬
         return queryset.order_by('operating_status_order', 'booth_name')
-    
-    # def create(self, request, *args, **kwargs):
-    #     serializer = self.get_serializer(data=request.data)
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
+    # 부스 목록 조회
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.get_queryset()
+            serializer = self.get_serializer(queryset, many=True)
+            return custom_response(
+                data=serializer.data,
+                message='부스 목록 조회 성공',
+                code=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return custom_response(
+                data={'detail': str(e)},
+                message='부스 목록 조회 실패',
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                success=False
+            )
+
+    # 전체 부스 개수 조회
     @action(detail=False, methods=['get'], url_path='count')
     def get_booth_count(self, request):
         try:
             booth_count = Booth.objects.count()
-            return custom_response({'booth_count': booth_count}, message='전체 부스 개수 조회 성공')
+            return custom_response(
+                {'booth_count': booth_count}, 
+                message='전체 부스 개수 조회 성공'
+            )
         except Exception as e:
-            return custom_response(data=None, message='전체 부스 개수 조회 실패', code=status.HTTP_500_INTERNAL_SERVER_ERROR, success=False)
-        
-    def retrieve(self, request, *args, **kwargs):
-        try:
-            booth = self.get_object()
-            serializer = self.get_serializer(booth)
-            return custom_response(data=serializer.data, message="Booth detail fetched successfully", code=status.HTTP_200_OK)
-        except Exception as e:
-            return custom_response(data=None, message=str(e), code=status.HTTP_500_INTERNAL_SERVER_ERROR, success=False)
+            return custom_response(
+                data={'detail': str(e)}, 
+                message='전체 부스 개수 조회 실패', 
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                success=False
+            )
 
+    #부스 위치 목록 조회
     @action(detail=False, methods=['get'], url_path='location')
     def get_booth_location(self, request):
         try:
             booths = Booth.objects.all()
             serializer = BoothLocationSerializer(booths, many=True)
-            return custom_response(serializer.data, message='전체 부스 개수 조회 성공')
+            return custom_response(
+                serializer.data, 
+                message='부스 위치 목록 조회 성공',
+                code=status.HTTP_200_OK
+                )
         except Exception as e:
-            return custom_response(data=None, message='전체 부스 개수 조회 실패', code=status.HTTP_500_INTERNAL_SERVER_ERROR, success=False)
-    
-    # 에러 띄우기 위한 함수
-    @action(detail=False, methods=['get'], url_path='error')
-    def error(self, request):
-        raise ResourceNotFound('This booth does not exist.')
-    
-    # 에러 띄우기 위한 함수 mk2
-    @action(detail=False, methods=['get'], url_path='error2')
-    def error2(self, request):
-        return custom_response(data=None, message='This should not be reached', code=200, success=True)
+            return custom_response(
+                data={'detail': str(e)}, 
+                message='부스 위치 목록 조회 실패', 
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                success=False
+            )
+
+    #부스 상세 조회
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            booth = self.get_object()
+            serializer = self.get_serializer(booth)
+            return custom_response(
+                data=serializer.data, 
+                message="부스 상세 조회 성공", 
+                code=status.HTTP_200_OK
+                )
+        except Exception as e:
+            return custom_response(
+                data={'detail': str(e)}, 
+                message='부스 상세 조회 실패', 
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                success=False
+            )
 
 class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.ListModelMixin):
+    """
+    - GET   /booths-waiting         -> 부스 목록(가나다순) - 대기 정보
+    - GET   /booths-waiting/{pk}    -> 부스 상세 - 대기 정보
+    """
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -86,10 +120,8 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
         return BoothWaitingDetailSerializer 
     
     def get_queryset(self):
-        # 운영 상태에 따른 정렬 우선순위 설정 ! '운영 중 - 대기 중지 - 운영 전 - 운영종료' 순
+        # '운영중 - 대기중지 - 운영전 - 운영종료' + 가나다 순서로 정렬
         queryset = Booth.objects.annotate(
-            # 'waiting', 'entering' 상태만 카운트
-            # waiting_count=Count('waitings', filter=Q(waitings__waiting_status__in=['waiting', 'entering'])),
             operating_status_order=Case(
                 When(operating_status='operating', then=Value(1)),
                 When(operating_status='paused', then=Value(2)),
@@ -98,13 +130,40 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
                 output_field=IntegerField()
             )
         )
-        # 운영 상태 + 이름 순 정렬
         return queryset.order_by('operating_status_order', 'booth_name')
+    
+    # 부스 목록 - 대기 정보 조회
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.get_queryset()
+            serializer = self.get_serializer(queryset, many=True)
+            return custom_response(
+                data=serializer.data,
+                message='부스 대기 목록 조회 성공',
+                code=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return custom_response(
+                data={'detail': str(e)},
+                message='부스 대기 목록 조회 실패',
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                success=False
+            )
 
+    # 부스 상세 - 대기 정보 조회
     def retrieve(self, request, *args, **kwargs):
         try:
             booth = self.get_object()
             serializer = self.get_serializer(booth)
-            return custom_response(data=serializer.data, message="Booth detail fetched successfully", code=status.HTTP_200_OK)
+            return custom_response(
+                data=serializer.data, 
+                message='부스 대기 상세 조회 성공', 
+                code=status.HTTP_200_OK
+            )
         except Exception as e:
-            return custom_response(data=None, message=str(e), code=status.HTTP_500_INTERNAL_SERVER_ERROR, success=False)
+            return custom_response(
+                data={'detail': str(e)}, 
+                message='부스 대기 상세 조회 실패', 
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                success=False
+            )
