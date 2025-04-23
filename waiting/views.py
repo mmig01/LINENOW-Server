@@ -13,6 +13,7 @@ from utils.permissions import IsUser
 from .tasks import check_confirmed
 from utils.sendmessages import sendsms
 from django.utils import timezone
+from manager.models import Manager
 
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -112,17 +113,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
             code=status.HTTP_201_CREATED
         )
     
-
-# 나의 대기 - 대기중
-class MyWaitingViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin):
-    queryset = Waiting.objects.all()
-
-    def get_serializer_class(self):
-        if self.action == "list":
-            return WaitingListSerializer
-        return WaitingDetailSerializer
-    
-    def list(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         user = request.user
         if not user.is_authenticated:
             return Response({
@@ -132,11 +123,55 @@ class MyWaitingViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Re
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         
-        queryset = Waiting.objects.filter(user=user, waiting_status="waiting")
-        serializer = self.get_serializer(queryset, many=True)
-        return custom_response(data=serializer.data, message="대기중인 나의 대기 리스트 가져오기 성공!", code=status.HTTP_200_OK)
+        waiting_id = kwargs.get('pk')
+        new_status = request.data.get('waiting_status')
+        
+        if not new_status:
+            return Response({
+                "status": "error",
+                "message": "waiting_status가 필요합니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        waiting = get_object_or_404(Waiting, waiting_id = waiting_id)
+        booth = waiting.booth
+
+        waiting.waiting_status = new_status
+        waiting.canceled_at = timezone.now()
+        waiting.save()
+
+        serializer = WaitingDetailSerializer(waiting)
+
+        if new_status == "canceled":
+            try:
+                channel_layer = get_channel_layer()
+                admin_group_name = f"booth_{booth.booth_id}_admin"
+                print('Sending websocket message:', admin_group_name)
+                async_to_sync(channel_layer.group_send)(
+                    admin_group_name,
+                    {
+                        'type': 'send_to_admin',  # consumer 쪽의 handler 함수 이름 (ex: def send_to_admin(self, event))
+                        'status': 'success',
+                        'message': '사용자가 대기를 취소했습니다.',
+                        'code': 200,
+                        'data': {
+                            'waiting_id': waiting.waiting_id,
+                            'waiting_status': waiting.waiting_status,
+                        }
+                    }
+                )
+            except Exception as e:
+                print("WebSocket send error:", str(e))
+            
+            return custom_response(
+                data=serializer.data,
+                message="대기가 취소되었습니다.",
+                code=status.HTTP_200_OK
+            )
     
-    def retrieve(self, request, *args, **kwargs):
+    @action(detail=False, methods=['get'], url_path='my-waiting')
+    def my_waiting(self, request):
         user = request.user
         if not user.is_authenticated:
             return Response({
@@ -146,22 +181,27 @@ class MyWaitingViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Re
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         
+        # 대기 중인 내역 가져오기
         queryset = Waiting.objects.filter(user=user, waiting_status="waiting")
-        serializer = self.get_serializer(queryset, many=True)
-        return custom_response(data=serializer.data, message="대기중인 대기 상세 가져오기 성공!", code=status.HTTP_200_OK)
-    
+        serializer = WaitingListSerializer(queryset, many=True)
+
+        if not queryset.exists():
+            return Response({
+                "status": "error",
+                "message": "대기 중인 내역이 없습니다.",
+                "code": status.HTTP_200_OK,
+                "data": []
+            }, status=status.HTTP_200_OK)
+
+        return Response({
+            "status": "success",
+            "message": "대기중인 나의 대기 리스트 가져오기 성공!",
+            "code": status.HTTP_200_OK,
+            "data": serializer.data
+        })
 # 나의 대기 - 대기 종료
-class MyWaitedViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
-    serializer_class = WaitingListSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-        if not user.is_authenticated:
-            return Waiting.objects.none()  # 로그인하지 않은 경우 빈 QuerySet 반환
-        
-        return Waiting.objects.filter(user=user).exclude(waiting_status__in=["waiting", "not_waiting"])
-
-    def list(self, request, *args, **kwargs):
+    @action(detail=False, methods=['get'], url_path='my-waited')
+    def my_waited(self, request):
         user = request.user
         if not user.is_authenticated:
             return Response({
@@ -171,11 +211,13 @@ class MyWaitedViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        
-        return custom_response(
-            data=serializer.data,
-            message="종료된 대기 리스트 가져오기 성공!",
-            code=status.HTTP_200_OK
-        )
+        # 종료된 대기 내역 가져오기
+        queryset = Waiting.objects.filter(user=user).exclude(waiting_status="waiting")
+        serializer = WaitingListSerializer(queryset, many=True)
+
+        return Response({
+            "status": "success",
+            "message": "대기 종료된 나의 대기 리스트 가져오기 성공!",
+            "code": status.HTTP_200_OK,
+            "data": serializer.data
+        })
