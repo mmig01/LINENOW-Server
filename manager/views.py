@@ -17,7 +17,7 @@ from utils.permissions import IsManagerUser
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import WaitingFilter
 from rest_framework.decorators import action
-from waiting.tasks import check_ready_to_confirm
+# from waiting.tasks import check_ready_to_confirm
 from utils.sendmessages import sendsms
 from django.utils import timezone
 from django.db.models import Case, When, Value, IntegerField

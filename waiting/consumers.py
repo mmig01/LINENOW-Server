@@ -9,25 +9,25 @@ from booth.models import Booth, BoothImage
 
 User = get_user_model()
 
-class WaitingConsumer(AsyncJsonWebsocketConsumer):
+class AdminWaitingConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         try:
             self.user = self.scope["user"]
 
             self.booth_id = self.scope['url_route']['kwargs']['booth_id']
-            query_params = parse_qs(self.scope["query_string"].decode("utf-8"))
-            self.user_type = query_params.get("user_type", ["user"])[0]  # "admin" or "user"
+            # query_params = parse_qs(self.scope["query_string"].decode("utf-8"))
+            # self.user_type = query_params.get("user_type", ["user"])[0]  # "admin" or "user"
 
-            print("user_type:", self.user_type)
+            # print("user_type:", self.user_type)
 
             self.admin_group_name = f"booth_{self.booth_id}_admin"
-            self.user_group_name = f"booth_{self.booth_id}_users"
+            # self.user_group_name = f"booth_{self.booth_id}_users"
 
             if self.user.is_authenticated:
-                if self.user_type == "admin":
-                    await self.channel_layer.group_add(self.admin_group_name, self.channel_name)
-                else:
-                    await self.channel_layer.group_add(self.user_group_name, self.channel_name)
+                # if self.user_type == "admin":
+                await self.channel_layer.group_add(self.admin_group_name, self.channel_name)
+                # else:
+                #     await self.channel_layer.group_add(self.user_group_name, self.channel_name)
 
                 await self.accept()
             else:
@@ -38,12 +38,12 @@ class WaitingConsumer(AsyncJsonWebsocketConsumer):
 
     async def disconnect(self, close_code):
         try:
-            if self.user_type == "admin":
-                await self.channel_layer.group_discard(self.admin_group_name, self.channel_name)
-            else:
-                await self.channel_layer.group_discard(self.user_group_name, self.channel_name)
+            # if self.user_type == "admin":
+            await self.channel_layer.group_discard(self.admin_group_name, self.channel_name)
+            # else:
+                # await self.channel_layer.group_discard(self.user_group_name, self.channel_name)
 
-            print(f"[DISCONNECT] booth_id={self.booth_id}, user_type={self.user_type}, close_code={close_code}")
+            # print(f"[DISCONNECT] booth_id={self.booth_id}, user_type={self.user_type}, close_code={close_code}")
         except Exception as e:
             print(f"[DISCONNECT ERROR] {str(e)}")
     
@@ -196,6 +196,67 @@ class WaitingConsumer(AsyncJsonWebsocketConsumer):
             'data': event.get('data'),
         })
     
+    # async def send_to_user(self, event):
+    #     await self.send_json({
+    #         'status': event.get('status'),
+    #         'message': event.get('message'),
+    #         'code': event.get('code'),
+    #         'data': event.get('data'),
+    #     })
+
+    # @database_sync_to_async
+    # def get_user_waiting_info(self, request_user, booth_id):
+    #     try:
+    #         return Waiting.objects.get(user=request_user, booth=booth_id)
+    #     except Waiting.DoesNotExist:
+    #         return None
+    
+    # @database_sync_to_async
+    # def get_waiting_cnt(self, booth_id):
+    #     return Waiting.objects.filter(booth=booth_id, waiting_status="waiting").count()
+    
+    # @database_sync_to_async
+    # def get_entering_cnt(self, booth_id):
+    #     return Waiting.objects.filter(booth=booth_id, waiting_status="entering").count()
+    
+    # @database_sync_to_async
+    # def get_entered_cnt(self, booth_id):
+    #     return Waiting.objects.filter(booth=booth_id, waiting_status="entered").count()
+    
+    # @database_sync_to_async
+    # def get_canceled_cnt(self, booth_id):
+    #     canceled_cnt = Waiting.objects.filter(booth=booth_id, waiting_status="canceled").count()
+    #     time_over_cnt = Waiting.objects.filter(booth=booth_id, waiting_status="time_over").count()
+    #     return canceled_cnt + time_over_cnt
+    
+    # @database_sync_to_async
+    # def get_waiting_info(self, booth_id, waiting_num):
+    #     return Waiting.objects.get(booth=booth_id, waiting_num=waiting_num)
+
+    # @database_sync_to_async
+    # def get_booth_info(self, booth_id):
+    #     return Booth.objects.filter(booth_id=booth_id)
+    
+    # @database_sync_to_async
+    # def get_booth_thumbnail(self, booth_id):
+    #     return BoothImage.objects.filter(booth=booth_id).first()
+    
+class UserWaitingConsumer(AsyncJsonWebsocketConsumer):
+    async def connect(self):
+        self.user = self.scope["user"]
+        if self.user.is_authenticated:
+            self.group_name = f"user_{self.user.id}"
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
+            await self.accept()
+        else:
+            await self.close()
+
+    async def disconnect(self, close_code):
+        try:
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        except Exception as e:
+            print(f"[DISCONNECT ERROR] {str(e)}")
+
     async def send_to_user(self, event):
         await self.send_json({
             'status': event.get('status'),
@@ -203,40 +264,3 @@ class WaitingConsumer(AsyncJsonWebsocketConsumer):
             'code': event.get('code'),
             'data': event.get('data'),
         })
-
-    @database_sync_to_async
-    def get_user_waiting_info(self, request_user, booth_id):
-        try:
-            return Waiting.objects.get(user=request_user, booth=booth_id)
-        except Waiting.DoesNotExist:
-            return None
-    
-    @database_sync_to_async
-    def get_waiting_cnt(self, booth_id):
-        return Waiting.objects.filter(booth=booth_id, waiting_status="waiting").count()
-    
-    @database_sync_to_async
-    def get_entering_cnt(self, booth_id):
-        return Waiting.objects.filter(booth=booth_id, waiting_status="entering").count()
-    
-    @database_sync_to_async
-    def get_entered_cnt(self, booth_id):
-        return Waiting.objects.filter(booth=booth_id, waiting_status="entered").count()
-    
-    @database_sync_to_async
-    def get_canceled_cnt(self, booth_id):
-        canceled_cnt = Waiting.objects.filter(booth=booth_id, waiting_status="canceled").count()
-        time_over_cnt = Waiting.objects.filter(booth=booth_id, waiting_status="time_over").count()
-        return canceled_cnt + time_over_cnt
-    
-    @database_sync_to_async
-    def get_waiting_info(self, booth_id, waiting_num):
-        return Waiting.objects.get(booth=booth_id, waiting_num=waiting_num)
-
-    @database_sync_to_async
-    def get_booth_info(self, booth_id):
-        return Booth.objects.filter(booth_id=booth_id)
-    
-    @database_sync_to_async
-    def get_booth_thumbnail(self, booth_id):
-        return BoothImage.objects.filter(booth=booth_id).first()
