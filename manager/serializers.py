@@ -18,9 +18,9 @@ class ManagerSerializer(serializers.ModelSerializer):
     manager_code = serializers.CharField(write_only=True, required=True)
     class Meta:
         model = User
-        fields = ('login_id', 'user_name', 'manager_code')
+        fields = ('user_phone', 'user_name', 'manager_code')
         extra_kwargs = {
-            'login_id': {'required': True},
+            'user_phone': {'required': True},
             'user_name': {'required': True},
             'manager_code': {'required': True},
         }

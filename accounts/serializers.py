@@ -3,7 +3,6 @@ from .models import User, SMSAuthenticate
 
 class UserSerializer(serializers.ModelSerializer):
     # 프론트엔드에서 입력받는 필드: 패스워드 2개와 sms_code
-    user_phone = serializers.CharField(source='login_id', required=True)
     user_password1 = serializers.CharField(write_only=True, required=True)
     user_password2 = serializers.CharField(write_only=True, required=True)
     sms_code = serializers.CharField(write_only=True, required=True)
