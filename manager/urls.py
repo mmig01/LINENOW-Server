@@ -4,23 +4,25 @@ from rest_framework import routers
 from .views import *
 
 app_name = 'manager'
+manager_router = routers.SimpleRouter(trailing_slash=False)
+manager_router.register('manager', ManagerViewSet, basename='manager')
+# ask_router = routers.SimpleRouter(trailing_slash=False)
+# ask_router.register(r'asks', AskViewSet, basename='asks')
 
-ask_router = routers.SimpleRouter(trailing_slash=False)
-ask_router.register(r'asks', AskViewSet, basename='asks')
+# booth_waiting_router = routers.SimpleRouter(trailing_slash=False)
+# booth_waiting_router.register(r'waitings', BoothWaitingViewSet, basename='waitings')
 
-booth_waiting_router = routers.SimpleRouter(trailing_slash=False)
-booth_waiting_router.register(r'waitings', BoothWaitingViewSet, basename='waitings')
-
-booth_detail_router = routers.SimpleRouter(trailing_slash=False)
-booth_detail_router.register(r'booth', BoothDetailViewSet, basename='booth')
+# booth_detail_router = routers.SimpleRouter(trailing_slash=False)
+# booth_detail_router.register(r'booth', BoothDetailViewSet, basename='booth')
 
 urlpatterns = [
-    path('', include(ask_router.urls)),
-    path('manager/', include(booth_waiting_router.urls)),
-    path('manager/', include(booth_detail_router.urls)),
-    path('manager/login', AdminLoginView.as_view(), name='admin_login'),
-    path('manager/logout', AdminLogoutView.as_view(), name='admin_logout'),
-    path('manager/waiting-counts', WaitingCountView.as_view(), name='waiting_counts'),
+    path('', include(manager_router.urls)),
+    # path('', include(ask_router.urls)),
+    # path('manager/', include(booth_waiting_router.urls)),
+    # path('manager/', include(booth_detail_router.urls)),
+    # path('manager/login', AdminLoginView.as_view(), name='admin_login'),
+    # path('manager/logout', AdminLogoutView.as_view(), name='admin_logout'),
+    # path('manager/waiting-counts', WaitingCountView.as_view(), name='waiting_counts'),
     # path('manager/waitings', BoothWaitingListView.as_view(), name='booth_waiting_list'),
     # path('manager/waitings/status/<str:status_group>', BoothWaitingStatusFilterView.as_view(), name='booth_waiting_status_filter'),
 
