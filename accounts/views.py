@@ -26,10 +26,9 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='registration')
     def sign_up(self, request):
         serializer = UserSerializer(data=request.data)
-        
         if serializer.is_valid():
             validated_data = serializer.validated_data
-            user_phone = validated_data.get('login_id')
+            user_phone = validated_data.get('user_phone')
             provided_sms_code = validated_data.get('sms_code')
             privided_sms_code_hash = hashlib.sha256(provided_sms_code.encode('utf-8')).hexdigest()
             # SMS 인증 코드 유효성 검사
@@ -56,7 +55,7 @@ class UserViewSet(viewsets.ViewSet):
             try:
                 # 인증 통과 시 회원가입 진행
                 user = serializer.save()
-                customer_user = CustomerUser.objects.create(user=user)
+                
             except Exception as e:
                 return Response({
                     "status": "error",
@@ -67,7 +66,7 @@ class UserViewSet(viewsets.ViewSet):
                     ]
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-
+            customer_user = CustomerUser.objects.create(user=user)
             refresh = RefreshToken.for_user(customer_user.user)
             data = {
                 "status": "success",
@@ -80,7 +79,7 @@ class UserViewSet(viewsets.ViewSet):
                         "user": {
                             "user_id": customer_user.id,
                             "user_name": customer_user.user.user_name,
-                            "user_phone": customer_user.user.login_id,
+                            "user_phone": customer_user.user.user_phone,
                             "no_show_num": customer_user.no_show_num
                         }
                     }
@@ -117,7 +116,7 @@ class UserViewSet(viewsets.ViewSet):
                     {"detail": "전화번호와 비밀번호를 모두 입력해주세요."}
                 ]
             }, status=status.HTTP_400_BAD_REQUEST)
-        user = get_object_or_404(User, login_id=phone)
+        user = get_object_or_404(User, user_phone=phone)
         customer_user = get_object_or_404(CustomerUser, user=user)
         if customer_user.user.check_password(password):
             refresh = RefreshToken.for_user(customer_user.user)
@@ -132,7 +131,7 @@ class UserViewSet(viewsets.ViewSet):
                         "user": {
                             "user_id": customer_user.id,
                             "user_name": customer_user.user.user_name,
-                            "user_phone": customer_user.user.login_id,
+                            "user_phone": customer_user.user.user_phone,
                             "no_show_num": customer_user.no_show_num
                         }
                     }
@@ -248,7 +247,7 @@ class SMSViewSet(viewsets.ViewSet):
             send_phone = os.getenv("SEND_PHONE")
             ssodaa_base_url = os.getenv("SSODAA_BASE_URL")
             sms_code = str(random.randint(10000, 99999))
-
+    
             payload = {
                 'token_key': sms_token_key,
                 'msg_type': 'SMS',

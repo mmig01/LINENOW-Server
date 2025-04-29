@@ -3,29 +3,29 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.utils import timezone
 class UserManager(BaseUserManager):
-    def create_user(self, login_id, password=None, **extra_fields):
-        if not login_id:
+    def create_user(self, user_phone, password=None, **extra_fields):
+        if not user_phone:
             raise ValueError(_("The phone number must be set"))
         if 'user_name' not in extra_fields or not extra_fields['user_name']:
             raise ValueError(_("The user name must be set"))
-        user = self.model(login_id=login_id, **extra_fields)
+        user = self.model(user_phone=user_phone, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, login_id, password=None, **extra_fields):
+    def create_superuser(self, user_phone, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
-        extra_fields.setdefault("user_name", login_id)
+        extra_fields.setdefault("user_name", user_phone)
         if extra_fields.get("is_staff") is not True:
             raise ValueError(_("Superuser must have is_staff=True."))
         if extra_fields.get("is_superuser") is not True:
             raise ValueError(_("Superuser must have is_superuser=True."))
-        return self.create_user(login_id, password, **extra_fields)
+        return self.create_user(user_phone, password, **extra_fields)
 
 class User(AbstractBaseUser, PermissionsMixin):
-    login_id = models.CharField(
+    user_phone = models.CharField(
         max_length=20,
         unique=True,
         help_text=_("used for authentication.")
@@ -39,21 +39,21 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-
+    is_manager = models.BooleanField(default=False)
     objects = UserManager()
 
-    USERNAME_FIELD = 'login_id'
+    USERNAME_FIELD = 'user_phone'
     REQUIRED_FIELDS = ['user_name']
 
     def __str__(self):
-        return self.login_id
+        return self.user_phone
     
 class CustomerUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_user')
     # 추가적인 필드들 (예: 주소, 전화번호 등)
     no_show_num = models.IntegerField(default=0)
     def __str__(self):
-        return self.user.login_id
+        return self.user.user_phone
 
 class SMSAuthenticate(models.Model):
     user_phone = models.CharField(max_length=20, help_text="인증 받을 전화번호")

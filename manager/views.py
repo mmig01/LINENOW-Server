@@ -35,6 +35,8 @@ class ManagerViewSet(viewsets.ViewSet):
                 booth = request.data.get('booth')
                 manager_booth = get_object_or_404(Booth, booth_name=booth)
                 manager_user = Manager.objects.create(user=user, booth=manager_booth)
+                manager_user.user.is_manager = True
+                user.save()
             except Exception as e:
                 return Response({
                     "status": "error",
