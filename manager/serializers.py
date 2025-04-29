@@ -1,3 +1,6 @@
+from hashlib import sha256
+
+from accounts.models import User
 from .models import Ask, Manager
 from booth.models import Booth
 from rest_framework import serializers
@@ -11,7 +14,25 @@ class AskSerializer(serializers.ModelSerializer):
         model = Ask
         fields = '__all__'
     
+class ManagerSerializer(serializers.ModelSerializer):
+    manager_code = serializers.CharField(write_only=True, required=True)
+    class Meta:
+        model = User
+        fields = ('user_phone', 'user_name', 'manager_code')
+        extra_kwargs = {
+            'user_phone': {'required': True},
+            'user_name': {'required': True},
+            'manager_code': {'required': True},
+        }
 
+    def create(self, validated_data):
+        password = validated_data.pop('manager_code')
+        hashed_password = sha256(password.encode()).hexdigest()
+        user = User(**validated_data)
+        user.set_password(hashed_password)
+        user.save()
+        return user
+        
 class BoothWaitingSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     confirm_due_time = serializers.SerializerMethodField()  # 3분 더한 시간 반환

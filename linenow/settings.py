@@ -50,6 +50,7 @@ CSRF_TRUSTED_ORIGINS = ['https://linenow-backend.store', 'http://127.0.0.1:8000'
 INSTALLED_APPS = [
     'daphne',
     'channels',
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -127,6 +128,7 @@ SIMPLE_JWT = {
 }
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",   # ← 이 줄을 추가 (맨 위가 좋습니다)
     'allauth.account.middleware.AccountMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -257,8 +259,11 @@ CORS_ALLOWED_ORIGINS = [
     # 로컬 개발용 주소
     'http://localhost:3000', 
     'http://localhost:5173', 
-    'http://127.0.0.1:3000', 
-    'http://127.0.0.1:5173',
+    'https://localhost:3000',
+    'https://localhost:5173',
+    
+    'https://127.0.1:3000',
+    'https://127.0.1:5173',
     'http://127.0.0.1:8000',
 
     # 프론트엔드 도메인 또는 IP주소

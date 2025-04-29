@@ -10,7 +10,9 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import SMSAuthenticate, User
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+
+from .models import SMSAuthenticate, User, CustomerUser
 from .serializers import UserSerializer
 
 class UserViewSet(viewsets.ViewSet):
@@ -20,11 +22,10 @@ class UserViewSet(viewsets.ViewSet):
     - DELETE /user/{pk}/withdraw  -> 회원탈퇴
     """
     
-   # 회원가입
+    # 회원가입
     @action(detail=False, methods=['post'], url_path='registration')
     def sign_up(self, request):
         serializer = UserSerializer(data=request.data)
-        
         if serializer.is_valid():
             validated_data = serializer.validated_data
             user_phone = validated_data.get('user_phone')
@@ -50,10 +51,23 @@ class UserViewSet(viewsets.ViewSet):
                     "code": 400,
                     "data": [{"detail": "문자인증코드가 올바르지 않거나 만료되었습니다."}]
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                # 인증 통과 시 회원가입 진행
+                user = serializer.save()
+                
+            except Exception as e:
+                return Response({
+                    "status": "error",
+                    "message": "회원가입 실패",
+                    "code": 500,
+                    "data": [
+                        {"detail": str(e)}
+                    ]
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-            # 인증 통과 시 회원가입 진행
-            user = serializer.save()
-            refresh = RefreshToken.for_user(user)
+            customer_user = CustomerUser.objects.create(user=user)
+            refresh = RefreshToken.for_user(customer_user.user)
             data = {
                 "status": "success",
                 "message": "회원가입 성공",
@@ -63,10 +77,10 @@ class UserViewSet(viewsets.ViewSet):
                         "access": str(refresh.access_token),
                         "refresh": str(refresh),
                         "user": {
-                            "user_id": user.id,
-                            "user_name": user.user_name,
-                            "user_phone": user.user_phone,
-                            "no_show_num": user.no_show_num
+                            "user_id": customer_user.id,
+                            "user_name": customer_user.user.user_name,
+                            "user_phone": customer_user.user.user_phone,
+                            "no_show_num": customer_user.no_show_num
                         }
                     }
                 ]
@@ -102,11 +116,10 @@ class UserViewSet(viewsets.ViewSet):
                     {"detail": "전화번호와 비밀번호를 모두 입력해주세요."}
                 ]
             }, status=status.HTTP_400_BAD_REQUEST)
-    
         user = get_object_or_404(User, user_phone=phone)
-    
-        if user.check_password(password):
-            refresh = RefreshToken.for_user(user)
+        customer_user = get_object_or_404(CustomerUser, user=user)
+        if customer_user.user.check_password(password):
+            refresh = RefreshToken.for_user(customer_user.user)
             data = {
                 "status": "success",
                 "message": "로그인 성공",
@@ -116,10 +129,10 @@ class UserViewSet(viewsets.ViewSet):
                         "access": str(refresh.access_token),
                         "refresh": str(refresh),
                         "user": {
-                            "user_id": user.id,
-                            "user_name": user.user_name,
-                            "user_phone": user.user_phone,
-                            "no_show_num": user.no_show_num
+                            "user_id": customer_user.id,
+                            "user_name": customer_user.user.user_name,
+                            "user_phone": customer_user.user.user_phone,
+                            "no_show_num": customer_user.no_show_num
                         }
                     }
                 ]
@@ -172,6 +185,10 @@ class UserViewSet(viewsets.ViewSet):
                 ]
             }, status=status.HTTP_401_UNAUTHORIZED)
         
+        # 블랙리스트 처리
+        tokens = OutstandingToken.objects.filter(user=request.user)
+        for token in tokens:
+            BlacklistedToken.objects.get_or_create(token=token)
         # access 토큰에 해당하는 사용자 삭제
         request.user.delete()
         return Response({
@@ -187,7 +204,7 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='reset-no-show')
     def reset_no_show_num(self, request):
         try:
-            User.objects.all().update(no_show_num=0)
+            CustomerUser.objects.all().update(no_show_num=0)
             return Response({
                 "status": "success",
                 "message": "모든 유저의 no_show_num 값이 0으로 초기화되었습니다.",
@@ -230,7 +247,7 @@ class SMSViewSet(viewsets.ViewSet):
             send_phone = os.getenv("SEND_PHONE")
             ssodaa_base_url = os.getenv("SSODAA_BASE_URL")
             sms_code = str(random.randint(10000, 99999))
-
+    
             payload = {
                 'token_key': sms_token_key,
                 'msg_type': 'SMS',

@@ -9,7 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('user_phone', 'user_name', 'no_show_num', 'user_password1', 'user_password2', 'sms_code')
+        fields = ('user_phone', 'user_name', 'user_password1', 'user_password2', 'sms_code')
         extra_kwargs = {
             'user_phone': {'required': True},
             'user_name': {'required': True},
@@ -34,3 +34,5 @@ class SMSAuthenticateSerializer(serializers.ModelSerializer):
     class Meta:
         model = SMSAuthenticate
         fields = ['sms_code']
+
+   

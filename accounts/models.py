@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
-
+from django.utils import timezone
 class UserManager(BaseUserManager):
     def create_user(self, user_phone, password=None, **extra_fields):
         if not user_phone:
@@ -28,19 +28,18 @@ class User(AbstractBaseUser, PermissionsMixin):
     user_phone = models.CharField(
         max_length=20,
         unique=True,
-        help_text=_("User phone number, used for authentication.")
+        help_text=_("used for authentication.")
     )
     user_name = models.CharField(
         max_length=10,
         help_text=_("Name of the user.")
     )
-    no_show_num = models.IntegerField(default=0)
     # Dummy email 필드를 추가 (이메일 기능은 사용하지 않으므로, blank와 null 허용)
     email = models.EmailField(blank=True, null=True)
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-
+    is_manager = models.BooleanField(default=False)
     objects = UserManager()
 
     USERNAME_FIELD = 'user_phone'
@@ -49,8 +48,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.user_phone
     
-from django.db import models
-from django.utils import timezone
+class CustomerUser(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_user')
+    # 추가적인 필드들 (예: 주소, 전화번호 등)
+    no_show_num = models.IntegerField(default=0)
+    def __str__(self):
+        return self.user.user_phone
 
 class SMSAuthenticate(models.Model):
     user_phone = models.CharField(max_length=20, help_text="인증 받을 전화번호")
