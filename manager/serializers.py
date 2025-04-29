@@ -1,3 +1,4 @@
+from hashlib import sha256
 from .models import Ask, Manager
 from booth.models import Booth
 from rest_framework import serializers
@@ -11,7 +12,27 @@ class AskSerializer(serializers.ModelSerializer):
         model = Ask
         fields = '__all__'
     
-
+class ManagerSerializer(serializers.ModelSerializer):
+    booth = serializers.SlugRelatedField(
+        queryset=Booth.objects.all(),
+        slug_field='booth_name'
+    )
+    class Meta:
+        model = Manager
+        fields = '__all__'
+    
+        
+    def create(self, validated_data):
+        booth = validated_data['booth']
+        code = sha256(validated_data['manager_code'].encode()).hexdigest()
+        manager = Manager( 
+            booth=booth,
+            manager_code=code,
+        )
+        manager.save()
+        return manager
+        
+        
 class BoothWaitingSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     confirm_due_time = serializers.SerializerMethodField()  # 3분 더한 시간 반환

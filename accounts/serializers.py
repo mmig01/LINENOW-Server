@@ -1,15 +1,16 @@
 from rest_framework import serializers
-from .models import User, SMSAuthenticate
+from .models import User, SMSAuthenticate, CustomerUser
 
 class UserSerializer(serializers.ModelSerializer):
     # 프론트엔드에서 입력받는 필드: 패스워드 2개와 sms_code
+    user_phone = serializers.CharField(source='login_id', required=True)
     user_password1 = serializers.CharField(write_only=True, required=True)
     user_password2 = serializers.CharField(write_only=True, required=True)
     sms_code = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = User
-        fields = ('user_phone', 'user_name', 'no_show_num', 'user_password1', 'user_password2', 'sms_code')
+        fields = ('user_phone', 'user_name', 'user_password1', 'user_password2', 'sms_code')
         extra_kwargs = {
             'user_phone': {'required': True},
             'user_name': {'required': True},
@@ -34,3 +35,5 @@ class SMSAuthenticateSerializer(serializers.ModelSerializer):
     class Meta:
         model = SMSAuthenticate
         fields = ['sms_code']
+
+   
