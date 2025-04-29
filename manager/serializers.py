@@ -1,4 +1,6 @@
 from hashlib import sha256
+
+from accounts.models import User
 from .models import Ask, Manager
 from booth.models import Booth
 from rest_framework import serializers
@@ -13,25 +15,23 @@ class AskSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
 class ManagerSerializer(serializers.ModelSerializer):
-    booth = serializers.SlugRelatedField(
-        queryset=Booth.objects.all(),
-        slug_field='booth_name'
-    )
+    manager_code = serializers.CharField(write_only=True, required=True)
     class Meta:
-        model = Manager
-        fields = '__all__'
-    
-        
+        model = User
+        fields = ('login_id', 'user_name', 'manager_code')
+        extra_kwargs = {
+            'login_id': {'required': True},
+            'user_name': {'required': True},
+            'manager_code': {'required': True},
+        }
+
     def create(self, validated_data):
-        booth = validated_data['booth']
-        code = sha256(validated_data['manager_code'].encode()).hexdigest()
-        manager = Manager( 
-            booth=booth,
-            manager_code=code,
-        )
-        manager.save()
-        return manager
-        
+        password = validated_data.pop('manager_code')
+        hashed_password = sha256(password.encode()).hexdigest()
+        user = User(**validated_data)
+        user.set_password(hashed_password)
+        user.save()
+        return user
         
 class BoothWaitingSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()

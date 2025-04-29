@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, SMSAuthenticate, CustomerUser
+from .models import User, SMSAuthenticate
 
 class UserSerializer(serializers.ModelSerializer):
     # 프론트엔드에서 입력받는 필드: 패스워드 2개와 sms_code

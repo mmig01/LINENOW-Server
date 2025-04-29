@@ -1,4 +1,3 @@
-from datetime import timezone
 from rest_framework.response import Response
 from rest_framework import mixins, viewsets
 from .models import *
@@ -26,40 +25,44 @@ class ManagerViewSet(viewsets.ViewSet):
       "manager_code": "abcd1234"
     }
     """
-    @action(detail=False, methods=['post'], url_path='signup')
-    def signup(self, request):
+     # 회원가입
+    @action(detail=False, methods=['post'], url_path='registration')
+    def sign_up(self, request):
         serializer = ManagerSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                manager = serializer.save()
-                # refresh = RefreshToken.for_user(manager)  # Manager가 BaseUser여야 합니다.
-                # access  = refresh.access_token
+                user = serializer.save()
+                booth = request.data.get('booth')
+                manager_booth = get_object_or_404(Booth, booth_name=booth)
+                manager_user = Manager.objects.create(user=user, booth=manager_booth)
             except Exception as e:
                 return Response({
                     "status": "error",
-                    "message": "로그인 실패",
+                    "message": "회원가입 실패",
                     "code": 500,
                     "data": [
-                    str(e)
+                        {"detail": str(e)}
                     ]
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
 
-            return Response({
-            "status": "success",
-            "message": "매니저 회원가입 성공",
-            "code": 200,
-            "data": [
-                {
-                    # "access": str(access),
-                    # "refresh": str(refresh),
-                    "manager": {
-                        "manager_id": manager.manager_id,
-                        "booth": manager.booth.booth_name,
+            refresh = RefreshToken.for_user(manager_user.user)
+            data = {
+                "status": "success",
+                "message": "회원가입 성공",
+                "code": 200,
+                "data": [
+                    {
+                        "access": str(refresh.access_token),
+                        "refresh": str(refresh),
+                        "user": {
+                            "user_id": manager_user.id,
+                            "user_name": manager_user.user.user_name
+                        }
                     }
-                }
-            ]
-        }, status=status.HTTP_200_OK)
+                ]
+            }
+            return Response(data, status=status.HTTP_201_CREATED)
         else:
             error = {}
             for field, error_list in serializer.errors.items():
@@ -68,61 +71,86 @@ class ManagerViewSet(viewsets.ViewSet):
                     error = {"detail": f"{field}: {error}"}
             return Response({
                 "status": "error",
-                "message": "로그인 실패",
+                "message": "회원가입 실패",
                 "code": 500,
                 "data": [
                    error
                 ]
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
+    
+    # 로그인
     @action(detail=False, methods=['post'], url_path='login')
-    def login(self, request):
-        serializer = ManagerSerializer(data=request.data)
-        if serializer.is_valid():
-            code = serializer.validated_data['manager_code']
-
-            # 1) manager_code를 기준으로 Manager 객체 조회
-            manager = get_object_or_404(Manager, manager_code=sha256(code.encode('utf-8')).hexdigest())
-
-            # 2) (선택) 해시 비교가 필요하다면 check_password() 로 검증
-            #    만약 plain-text로 저장했다면 위 단계만으로 충분합니다.
-            # if not check_password(code, manager.manager_code):
-            #     return Response(..., status=status.HTTP_401_UNAUTHORIZED)
-
-            # 3) 토큰 발급 (여기선 Manager 모델 인스턴스를 user처럼 간주)
-            refresh = RefreshToken.for_user(manager)  # Manager가 BaseUser여야 합니다.
-            access  = refresh.access_token
-
-            return Response({
-            "status": "success",
-            "message": "매니저 로그인 성공",
-            "code": 200,
-            "data": [
-                {
-                    "access": str(access),
-                    "refresh": str(refresh),
-                    "manager": {
-                        "manager_id": manager.manager_id,
-                        "booth": manager.booth.booth_name,
-                    }
-                }
-            ]
-        }, status=status.HTTP_200_OK)
-        else:
-            error = {}
-            for field, error_list in serializer.errors.items():
-                for error in error_list:
-                    # error는 ErrorDetail 객체입니다.
-                    error = {"detail": f"{field}: {error}"}
+    def sign_in(self, request):
+        manager_code = request.data.get('manager_code')
+        if not manager_code:
             return Response({
                 "status": "error",
                 "message": "로그인 실패",
-                "code": 500,
+                "code": 400,
                 "data": [
-                   error
+                    {"detail": "관리자 코드를 입력해주세요."}
                 ]
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+
+        candidate = Manager.objects.all()
+        manager_user = None
+        for manager in candidate:
+            if manager.user and manager.user.check_password(sha256(manager_code.encode()).hexdigest()):
+                manager_user = manager
+                break
+
+        if not manager_user:
+            return Response({
+                "status": "error",
+                "message": "로그인 실패",
+                "code": 401,
+                "data": [
+                    {"detail": "비밀번호가 올바르지 않습니다."}
+                ]
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        refresh = RefreshToken.for_user(manager_user.user)
+        data = {
+            "status": "success",
+            "message": "로그인 성공",
+            "code": 200,
+            "data": [
+                {
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                    "user": {
+                        "manager_id": manager_user.id,
+                        "manager_name": manager_user.user.user_name,
+                        "booth_id": manager_user.booth.booth_id,
+                    }
+                }
+            ]
+        }
+        return Response(data, status=status.HTTP_200_OK)
+            
+    
+    @action(detail=False, methods=['post'], url_path='logout')
+    def logout(self, request):
+         # access 토큰을 통한 인증이 필요
+        if not request.user or not request.user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "인증이 필요합니다.",
+                "code": 401,
+                "data": [
+                    {"detail": "유효한 access 토큰이 필요합니다."}
+                ]
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        return Response({
+            "status": "success",
+            "message": "로그아웃이 완료되었습니다.",
+            "code": 200,
+            "data": [
+                {"detail": "로그아웃이 완료되었습니다."}
+            ]
+        }, status=status.HTTP_200_OK)
 
 # # 부스 웨이팅 조회
 # class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):

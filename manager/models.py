@@ -1,12 +1,10 @@
 from django.db import models
 from booth.models import Booth
-
-from hashlib import sha256
+from accounts.models import User
 
 class Manager(models.Model):
-    manager_id = models.AutoField(primary_key=True)
-    manager_code = models.CharField(max_length=255, unique=True)
     booth = models.OneToOneField(Booth, on_delete=models.CASCADE, related_name='manager')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='manager_user')
 
     def __str__(self):
         return f'{self.booth.booth_name} 관리자'
