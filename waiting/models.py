@@ -24,7 +24,7 @@ class Waiting(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="대기 생성 시간")  # 웨이팅 등록 시간을 위한 필드 추가 !!
     confirmed_at = models.DateTimeField(null=True, blank=True, verbose_name="대기 호출 시간")
     canceled_at = models.DateTimeField(null=True, blank=True, verbose_name="대기 취소 시간")
-    arrived_at = models.DurationField(null=True, blank=True, verbose_name="입장 시간")
+    arrived_at = models.CharField(max_length=10, null=True, blank=True, verbose_name="입장 시간")
     
     # created_at = models.DateTimeField(auto_now_add=True, verbose_name="대기 생성 시간")
     # updated_at = models.DateTimeField(auto_now=True, verbose_name="대기 업데이트 시간")
@@ -37,8 +37,9 @@ class Waiting(models.Model):
             if not self.arrived_at:
                 # 현재 시간과 confirmed_at의 차이를 계산
                 time_diff = timezone.now() - self.confirmed_at
-                # arrived_at에 시간 차이(timedelta) 저장
-                self.arrived_at = time_diff
+                minutes = time_diff.seconds // 60  # 분 단위
+                seconds = time_diff.seconds % 60  # 초 단위
+                self.arrived_at = f"{minutes:02d}-{seconds:02d}"  # "00-00" 형식으로 저장
 
         super().save(*args, **kwargs)
     
