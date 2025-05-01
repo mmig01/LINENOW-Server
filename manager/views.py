@@ -2,9 +2,11 @@ from rest_framework.response import Response
 from rest_framework import mixins, viewsets
 from .models import *
 from .serializers import *
+from utils.responses import custom_response
 
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.db.models import Case, When, Value, IntegerField
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -154,27 +156,117 @@ class ManagerViewSet(viewsets.ViewSet):
             ]
         }, status=status.HTTP_200_OK)
 
+    # 관리자 부스 대기 조회
+    @action(detail=False, methods=['get'], url_path='booth')
+    def booth_waiting_list(self, request):
+        # access 토큰을 통한 인증이 필요
+        if not request.user or not request.user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "인증이 필요합니다.",
+                "code": 401,
+                "data": [
+                    {"detail": "유효한 access 토큰이 필요합니다."}
+                ]
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:
+            booth = request.user.manager_user.booth
+            # 취소된 대기는 뒤로 정렬
+            queryset = Waiting.objects.filter(booth=booth).annotate(
+                canceled_waiting=Case(
+                    When(waiting_status__in=['canceled', 'time_over'], then=Value(1)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                )
+            ).order_by('canceled_waiting', 'created_at')
+
+            serializer = ManagerWaitingListSerializer(queryset, many=True)
+            return custom_response(
+                serializer.data, 
+                message='관리자 부스 대기 조회 성공',
+                code=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return custom_response(
+                data={'detail': str(e)},
+                message='관리자 부스 대기 조회 실패',
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                success=False
+            )
+
+    # 관리자 부스 운영 상태 변경
+    @action(detail=False, methods=['post'], url_path='booth/operating-status')
+    def change_operating_status(self, request):
+        # access 토큰을 통한 인증이 필요
+        if not request.user or not request.user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "인증이 필요합니다.",
+                "code": 401,
+                "data": [
+                    {"detail": "유효한 access 토큰이 필요합니다."}
+                ]
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:
+            operating_status = request.data.get('operating_status')
+            if operating_status not in ['operating', 'paused']:
+                return custom_response(
+                    data={'detail': "operating이나 paused로만 변경이 가능합니다."},
+                    message='부스 운영 상태 변경 실패',
+                    code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    success=False
+                )
+            
+            booth = request.user.manager_user.booth
+            if operating_status == booth.operating_status:
+                return custom_response(
+                    data={'detail': f"이미 {operating_status} 상태입니다."},
+                    message='부스 운영 상태 변경 실패',
+                    code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    success=False
+                )
+            
+            # 운영 상태 변경
+            booth.operating_status = operating_status
+            booth.save()
+
+            return custom_response(
+                data={'operating_status': booth.operating_status},
+                message='부스 운영 상태 변경 성공',
+                code=status.HTTP_200_OK,
+                success=True
+            )
+
+        except Exception as e:
+            return custom_response(
+                data={'detail': str(e)},
+                message='부스 운영 상태 변경 실패',
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                success=False
+            )
+
 # # 부스 웨이팅 조회
-# class BoothWaitingViewSet(CustomResponseMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
+# class BoothWaitingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
+#     serializer_class = ManagerWaitingListSerializer
 #     authentication_classes = [JWTAuthentication]
 #     permission_classes = [IsAuthenticated, IsManagerUser]
-#     serializer_class = BoothWaitingSerializer
 #     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
 #     filterset_class = WaitingFilter
 #     ordering_fields = ['created_at']  # 대기 생성 시간 순으로 정렬
 
 #     def get_queryset(self):
-#         admin = self.request.admin
-#         booth = admin.booth
+#         booth = self.request.booth
 
-#         # 해당 부스의 대기 목록 반환
+#         # 취소된 대기는 뒤로 정렬
 #         return Waiting.objects.filter(booth=booth).annotate(
-#         canceled_order=Case(
-#             When(waiting_status__in=['canceled', 'time_over_canceled'], then=Value(1)),
-#             default=Value(0),
-#             output_field=IntegerField(),
-#         )
-#     ).order_by('canceled_order', 'registered_at')  # 취소된 순서대로 뒤로 정렬
+#             canceled_waiting=Case(
+#                 When(waiting_status__in=['canceled', 'time_over'], then=Value(1)),
+#                 default=Value(0),
+#                 output_field=IntegerField(),
+#             )
+#         ).order_by('canceled_waiting', 'created_at')
     
 #     @action(detail=True, methods=['post'], url_path='action')
 #     def action(self, request, *args, **kwargs):
@@ -246,12 +338,10 @@ class ManagerViewSet(viewsets.ViewSet):
 #             code=status.HTTP_200_OK
 #         )
 
-
-
 # # 부스 관리 
-# class BoothDetailViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.ListModelMixin):
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated, IsManagerUser]
+# class BoothDetailViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.ListModelMixin):
+#     # authentication_classes = [JWTAuthentication]
+#     # permission_classes = [IsAuthenticated, IsManagerUser]
 
 #     def get_serializer_class(self):
 #         if self.action == 'update':
@@ -368,7 +458,7 @@ class ManagerViewSet(viewsets.ViewSet):
 #             code=status.HTTP_200_OK
 #         )
 
-# # 상태별 웨이팅 개수 카운트
+# 상태별 웨이팅 개수 카운트
 # class WaitingCountView(APIView):
 #     authentication_classes = [JWTAuthentication]
 #     permission_classes = [IsAuthenticated, IsManagerUser]
