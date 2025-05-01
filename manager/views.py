@@ -159,7 +159,7 @@ class ManagerViewSet(viewsets.ViewSet):
     # 관리자 부스 대기 조회
     @action(detail=False, methods=['get'], url_path='booth')
     def booth_waiting_list(self, request):
-        # access 토큰을 통한 인증이 필요
+        # 로그인 확인
         if not request.user or not request.user.is_authenticated:
             return Response({
                 "status": "error",
@@ -169,7 +169,15 @@ class ManagerViewSet(viewsets.ViewSet):
                     {"detail": "유효한 access 토큰이 필요합니다."}
                 ]
             }, status=status.HTTP_401_UNAUTHORIZED)
-        
+        # 관리자 여부 확인
+        if not request.user.is_manager:
+            return custom_response(
+                data={'detail': "관리자 유저가 아닙니다."},
+                message='권한이 없습니다.',
+                code=403,
+                success=False
+            )
+
         try:
             booth = request.user.manager_user.booth
             # 취소된 대기는 뒤로 정렬
@@ -198,7 +206,7 @@ class ManagerViewSet(viewsets.ViewSet):
     # 관리자 부스 운영 상태 변경
     @action(detail=False, methods=['post'], url_path='booth/operating-status')
     def change_operating_status(self, request):
-        # access 토큰을 통한 인증이 필요
+        # 로그인 확인
         if not request.user or not request.user.is_authenticated:
             return Response({
                 "status": "error",
@@ -208,6 +216,14 @@ class ManagerViewSet(viewsets.ViewSet):
                     {"detail": "유효한 access 토큰이 필요합니다."}
                 ]
             }, status=status.HTTP_401_UNAUTHORIZED)
+        # 관리자 여부 확인
+        if not request.user.is_manager:
+            return custom_response(
+                data={'detail': "관리자 유저가 아닙니다."},
+                message='권한이 없습니다.',
+                code=403,
+                success=False
+            )
         
         try:
             operating_status = request.data.get('operating_status')
