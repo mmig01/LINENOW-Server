@@ -81,7 +81,7 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
                 serializer.data, 
                 message='부스 위치 목록 조회 성공',
                 code=status.HTTP_200_OK
-                )
+            )
         except Exception as e:
             return custom_response(
                 data={'detail': str(e)}, 
@@ -99,7 +99,7 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
                 data=serializer.data, 
                 message="부스 상세 조회 성공", 
                 code=status.HTTP_200_OK
-                )
+            )
         except Exception as e:
             return custom_response(
                 data={'detail': str(e)}, 
@@ -134,6 +134,13 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
     
     # 부스 목록 - 대기 정보 조회
     def list(self, request, *args, **kwargs):
+        if not user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "로그인 후 이용해주세요!",
+                "code": status.HTTP_401_UNAUTHORIZED,
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
         try:
             queryset = self.get_queryset()
             serializer = self.get_serializer(queryset, many=True)
@@ -152,6 +159,13 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
 
     # 부스 상세 - 대기 정보 조회
     def retrieve(self, request, *args, **kwargs):
+        if not user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "로그인 후 이용해주세요!",
+                "code": status.HTTP_401_UNAUTHORIZED,
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
         try:
             booth = self.get_object()
             serializer = self.get_serializer(booth)
