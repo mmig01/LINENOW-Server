@@ -53,6 +53,10 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            echo "기존 media 파일 복사"
+            # media 폴더를 컨테이너 외부로 복사
+            docker cp linenow_backend:/media /home/ubuntu/media
+            
             echo "🔄 기존 컨테이너 중지 및 삭제..."
             docker stop linenow_backend || true
             docker rm linenow_backend || true
@@ -65,6 +69,14 @@ jobs:
 
             echo "🚀 새로운 컨테이너 실행..."
             docker run -d --name linenow_backend -p 8000:8000 ${{ secrets.DOCKER_USERNAME }}/linenow:latest
+
+            # media 폴더를 컨테이너 내부로 복사
+            if [ -d "/home/ubuntu/media" ]; then
+              echo "🔄 media 폴더 컨테이너 내부로 복사..."
+              docker cp /home/ubuntu/media linenow_backend:/
+            else
+              echo "🚨 /home/ubuntu/media 폴더가 없습니다. Skipping copy."
+            fi
 
             echo "🛠 데이터베이스 마이그레이션 실행..."
             docker exec linenow_backend python manage.py migrate
