@@ -47,4 +47,4 @@ RUN python manage.py collectstatic --noinput
 RUN python manage.py migrate
 
 # 8. Gunicorn 실행 (Django 서버 실행)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "linenow.wsgi:application"]
+CMD ["daphne",   "-b", "0.0.0.0", "-p", "8000", "linenow.asgi:application"]
