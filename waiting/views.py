@@ -18,55 +18,6 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .tasks import mark_waiting_as_time_over
 
-def send_websocket_message(waiting, booth_thumbnail_url, status_message, user_message):
-    try:
-        channel_layer = get_channel_layer()
-
-        # 관리자에게 메시지 전송
-        admin_group_name = f"booth_{waiting.booth.booth_id}_admin"
-        async_to_sync(channel_layer.group_send)(
-            admin_group_name,
-            {
-                'type': 'send_to_admin',
-                'status': 'success',
-                'message': status_message,
-                'code': 200,
-                'data': {
-                    'waiting_id': waiting.waiting_id,
-                    'waiting_status': waiting.waiting_status,
-                }
-            }
-        )
-
-        # 사용자에게 메시지 전송
-        user_group_name = f"user_{waiting.user.id}"
-        async_to_sync(channel_layer.group_send)(
-            user_group_name,
-            {
-                'type': 'send_to_user',
-                'status': 'success',
-                'message': user_message,
-                'code': 200,
-                'data': {
-                    'waiting_id': waiting.waiting_id,
-                    'waiting_num': waiting.waiting_num,
-                    'person_num': waiting.person_num,
-                    'created_at': waiting.created_at.isoformat(),
-                    'confirmed_at': waiting.confirmed_at.isoformat() if waiting.confirmed_at else None,
-                    'canceled_at': waiting.canceled_at.isoformat() if waiting.canceled_at else None,
-                    'booth_info': {
-                        'booth_id': waiting.booth.booth_id,
-                        'booth_name': waiting.booth.booth_name,
-                        'booth_location': waiting.booth.booth_location,
-                        'booth_thumbnail': booth_thumbnail_url
-                    }
-                }
-            }
-        )
-
-    except Exception as e:
-        print(f"WebSocket send error: {str(e)}")
-
 # 편의를 위해서 http에서 대기 생성할 수 있도록 한 것(모든 대기)
 class WaitingViewSet(viewsets.ModelViewSet):
     queryset = Waiting.objects.all()
@@ -85,6 +36,14 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "code": status.HTTP_401_UNAUTHORIZED,
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        if user.is_manager == True:
+            return Response({
+                "status": "error",
+                "message": "관리자는 대기 신청이 불가능합니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
         
         booth_id = request.data.get('booth_id')
         person_num = request.data.get('person_num')
@@ -164,6 +123,22 @@ class WaitingViewSet(viewsets.ModelViewSet):
     
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
+        if not request.user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "로그인 후 이용해주세요!",
+                "code": status.HTTP_401_UNAUTHORIZED,
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        if request.user.is_manager == True:
+            return Response({
+                "status": "error",
+                "message": "관리자는 대기 상세 정보 조회가 불가능합니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         if instance.user != request.user:
             return Response({
                 "status": "error",
@@ -178,6 +153,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
             code=status.HTTP_200_OK
         )
     
+    # 대기 취소(사용자)
     @action(detail=True, methods=['post'], url_path='user-cancel')
     def user_cancel_waiting(self, request, pk=None):
         user = request.user
@@ -188,6 +164,14 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "code": status.HTTP_401_UNAUTHORIZED,
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        if user.is_manager == True:
+            return Response({
+                "status": "error",
+                "message": "관리자는 대기 신청이 불가능합니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         waiting = get_object_or_404(Waiting, waiting_id=pk)
 
@@ -230,6 +214,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
             code=status.HTTP_200_OK
         )
     
+    # 대기 취소(관리자)
     @action(detail=True, methods=['post'], url_path='manager-cancel')
     def manager_cancel_waiting(self, request, pk=None):
         user = request.user
@@ -240,6 +225,14 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "code": status.HTTP_401_UNAUTHORIZED,
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        if user.is_manager == False:
+            return Response({
+                "status": "error",
+                "message": "대기 취소에 대한 권한이 없습니다.",
+                "code": status.HTTP_403_FORBIDDEN,
+                "data": None
+            }, status=status.HTTP_403_FORBIDDEN)
 
         waiting = get_object_or_404(Waiting, waiting_id=pk)
 
@@ -249,7 +242,8 @@ class WaitingViewSet(viewsets.ModelViewSet):
 
         booth_thumbnail = BoothImage.objects.filter(booth=waiting.booth.booth_id).first()
         booth_thumbnail_url = booth_thumbnail.booth_image.url if booth_thumbnail and booth_thumbnail.booth_image else None
-        send_websocket_message(waiting, booth_thumbnail_url, '관리자가 대기를 취소했습니다.', '대기가 취소되었습니다.')
+        
+        # 대기 취소 시 웹소켓 개발 필요?!?
 
         serializer = WaitingDetailSerializer(waiting)
         return custom_response(
@@ -258,6 +252,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
             code=status.HTTP_200_OK
         )
     
+    # 대기 호출
     @action(detail=True, methods=['post'], url_path='call')
     def call_waiting(self, request, pk=None):
         user = request.user
@@ -268,6 +263,14 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "code": status.HTTP_401_UNAUTHORIZED,
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        if user.is_manager == False:
+            return Response({
+                "status": "error",
+                "message": "대기 호출에 대한 권한이 없습니다.",
+                "code": status.HTTP_403_FORBIDDEN,
+                "data": None
+            }, status=status.HTTP_403_FORBIDDEN)
 
         waiting = get_object_or_404(Waiting, waiting_id=pk)
 
@@ -277,11 +280,70 @@ class WaitingViewSet(viewsets.ModelViewSet):
 
         booth_thumbnail = BoothImage.objects.filter(booth=waiting.booth.booth_id).first()
         booth_thumbnail_url = booth_thumbnail.booth_image.url if booth_thumbnail and booth_thumbnail.booth_image else None
-        send_websocket_message(waiting, booth_thumbnail_url, '관리자가 대기를 호출했습니다.', '대기가 호출되었습니다.')
-        print("[DEBUG] Scheduling mark_waiting_as_time_over with id:", pk)
-        print("Scheduling Celery task...")
+
         try:
-            mark_waiting_as_time_over.apply_async(args=[pk], countdown=30)
+            channel_layer = get_channel_layer()
+
+            # 관리자에게 메시지 전송
+            admin_group_name = f"booth_{waiting.booth.booth_id}_admin"
+            async_to_sync(channel_layer.group_send)(
+                admin_group_name,
+                {
+                    'type': 'send_to_admin',
+                    'status': 'success',
+                    'message': '관리자가 대기를 호출을 성공하였습니다.',
+                    'code': 200,
+                    'data': {
+                        'waiting_id': waiting.waiting_id,
+                        'waiting_status': waiting.waiting_status,
+                    }
+                }
+            )
+
+            # 사용자에게 메시지 전송
+            user_group_name = f"user_{waiting.user.id}"
+            entering_waitings = Waiting.objects.filter(user=waiting.user, waiting_status='entering')
+            entering_waitings_data = []
+
+            for w in entering_waitings:
+                booth_thumbnail = BoothImage.objects.filter(booth=w.booth.booth_id).first()
+                booth_thumbnail_url = booth_thumbnail.booth_image.url if booth_thumbnail and booth_thumbnail.booth_image else None
+
+                entering_waitings_data.append({
+                    'waiting_id': w.waiting_id,
+                    'waiting_num': w.waiting_num,
+                    'person_num': w.person_num,
+                    'created_at': w.created_at.isoformat(),
+                    'confirmed_at': w.confirmed_at.isoformat() if w.confirmed_at else None,
+                    'canceled_at': w.canceled_at.isoformat() if w.canceled_at else None,
+                    'waiting_status': w.waiting_status,
+                    'booth_info': {
+                        'booth_id': w.booth.booth_id,
+                        'booth_name': w.booth.booth_name,
+                        'booth_location': w.booth.booth_location,
+                        'booth_thumbnail': booth_thumbnail_url
+                    }
+                })
+
+            # WebSocket 메시지 전송
+            async_to_sync(channel_layer.group_send)(
+                user_group_name,
+                {
+                    'type': 'send_to_user',
+                    'status': 'success',
+                    'message': '대기가 호출되었습니다.',
+                    'code': 200,
+                    'data': {
+                        'entering_waitings': entering_waitings_data
+                    }
+                }
+            )
+
+        except Exception as e:
+            print(f"WebSocket send error: {str(e)}")
+
+        try:
+            mark_waiting_as_time_over.apply_async(args=[pk], countdown=600)
             print("Celery task scheduled successfully!")
         except Exception as e:
             print(f"Error scheduling task: {e}")
@@ -292,6 +354,231 @@ class WaitingViewSet(viewsets.ModelViewSet):
             message="대기가 호출되었습니다.",
             code=status.HTTP_200_OK
         )
+    
+    # 대기자 도착(입장)
+    @action(detail=True, methods=['post'], url_path='confirm')
+    def confirm_waiting(self, request, pk=None):
+        user = request.user
+        if not user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "로그인 후 이용해주세요!",
+                "code": status.HTTP_401_UNAUTHORIZED,
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        if user.is_manager == False:
+            return Response({
+                "status": "error",
+                "message": "대기 도착에 대한 권한이 없습니다.",
+                "code": status.HTTP_403_FORBIDDEN,
+                "data": None
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        waiting = get_object_or_404(Waiting, waiting_id=pk)
+        waiting.waiting_status = "entered"
+
+        if not waiting.confirmed_at:
+            return Response({
+                "status": "error",
+                "message": "대기 호출 시간이 존재하지 않습니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        now = timezone.now()
+        time_diff = now - waiting.confirmed_at
+
+        # 초 단위로 총 차이를 가져오기
+        total_seconds = time_diff.total_seconds()
+
+        # 분 단위와 초 단위 계산
+        minutes = int(total_seconds // 60)
+        seconds = int(total_seconds % 60)
+        
+        # arrived_at에 "분-초" 형식으로 저장
+        waiting.arrived_at = f"{minutes:02d}-{seconds:02d}"
+        
+        # 저장
+        waiting.save()
+        try:
+            channel_layer = get_channel_layer()
+            admin_group_name = f"booth_{waiting.booth.booth_id}_admin"
+            async_to_sync(channel_layer.group_send)(
+                admin_group_name,
+                {
+                    'type': 'send_to_admin',
+                    'status': 'success',
+                    'message': '입장이 완료되었습니다.',
+                    'code': 200,
+                    'data': {
+                        'waiting_id': waiting.waiting_id,
+                        'waiting_status': waiting.waiting_status,
+                    }
+                }
+            )
+        except Exception as e:
+            print("WebSocket send error (cancel):", str(e))
+
+        serializer = WaitingDetailSerializer(waiting)
+        print(serializer.data)
+        return custom_response(
+            data=serializer.data,
+            message="대기가 입장되었습니다.",
+            code=status.HTTP_200_OK
+        )
+
+    #대기 여러개일 때 확정하기 누르면 나머지는 취소되도록
+    @action(detail=True, methods=['post'], url_path='waiting-select')
+    def select_waiting(self, request, pk=None):
+        user = request.user
+        if not user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "로그인 후 이용해주세요!",
+                "code": status.HTTP_401_UNAUTHORIZED,
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        waiting = get_object_or_404(Waiting, waiting_id=pk)
+
+        if waiting.waiting_status != "entering":
+            return Response({
+                "status": "error",
+                "message": "호출된 대기만 선택할 수 있습니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        cancel_waitings = Waiting.objects.filter(
+            user=user,
+            waiting_status="entering"
+        ).exclude(waiting_id=pk)
+
+        # 상태 업데이트
+        for cancel_waiting in cancel_waitings:
+            cancel_waiting.waiting_status = "canceled"
+            cancel_waiting.save()
+
+            admin_group_name = f"booth_{cancel_waiting.booth.booth_id}_admin"
+            try:
+                channel_layer = get_channel_layer()
+                print("channel_layer is", channel_layer)
+                async_to_sync(channel_layer.group_send)(
+                    admin_group_name,
+                    {
+                        'type': 'send_to_admin',
+                        'status': 'success',
+                        'message': '입장이 완료되었습니다.',
+                        'code': 200,
+                        'data': {
+                            'waiting_id': cancel_waiting.waiting_id,
+                            'waiting_status': cancel_waiting.waiting_status,
+                        }
+                    }
+                )
+            except Exception as e:
+                print("WebSocket send error (cancel):", str(e))
+
+        serializer = WaitingListSerializer(waiting)
+        return custom_response(
+            data=serializer.data,
+            message="대기 입장을 확정하였습니다.",
+            code=status.HTTP_200_OK
+        )
+    
+    # 전체 대기 취소시 필요한 정보 get
+    @action(detail=False, methods=['get'], url_path='entering-waiting')
+    def view_all_waiting(self, request):
+        user = request.user
+        if not user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "로그인 후 이용해주세요!",
+                "code": status.HTTP_401_UNAUTHORIZED,
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        queryset = Waiting.objects.filter(user=user, waiting_status="entering")
+        entering_waitings = Waiting.objects.filter(user=user, waiting_status='entering')
+
+        booth_names = [waiting.booth.booth_name for waiting in entering_waitings]
+        booth_count = entering_waitings.count()
+
+        if not queryset.exists():
+            return Response({
+                "status": "error",
+                "message": "입장중인 내역이 없습니다.",
+                "code": status.HTTP_200_OK,
+                "data": None
+            }, status=status.HTTP_200_OK)
+
+        return Response({
+            "status": "success",
+            "message": "입장중인 나의 대기 리스트 가져오기 성공!",
+            "code": status.HTTP_200_OK,
+            "data": {
+                "booth_names": booth_names,
+                "count": booth_count
+            }
+        })
+
+    # 입장 차례 대기 전체 취소
+    @action(detail=False, methods=['post'], url_path='cancel-all-entering-waiting')
+    def cancel_all_entering_waiting(self, request):
+        user = request.user
+        
+        if not user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "로그인 후 이용해주세요!",
+                "code": status.HTTP_401_UNAUTHORIZED,
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+
+        waitings = Waiting.objects.filter(
+            user=user,
+            waiting_status="entering"
+        )
+
+        if not waitings.exists():
+            return Response({
+                "status": "error",
+                "message": "호출된 대기가 없습니다.",
+                "code": status.HTTP_404_NOT_FOUND,
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        for cancel_waiting in waitings:
+            cancel_waiting.waiting_status = "canceled"
+            cancel_waiting.save()
+
+            admin_group_name = f"booth_{cancel_waiting.booth.booth_id}_admin"
+            try:
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    admin_group_name,
+                    {
+                        'type': 'send_to_admin',
+                        'status': 'success',
+                        'message': '입장이 완료되었습니다.',
+                        'code': 200,
+                        'data': {
+                            'waiting_id': cancel_waiting.waiting_id,
+                            'waiting_status': cancel_waiting.waiting_status,
+                        }
+                    }
+                )
+            except Exception as e:
+                print("WebSocket send error (cancel):", str(e))
+
+        return custom_response(
+            data=None,
+            message="입장이 취소되었습니다.",
+            code=status.HTTP_200_OK
+        )
+
     @action(detail=False, methods=['get'], url_path='my-waiting')
     def my_waiting(self, request):
         user = request.user
@@ -310,14 +597,14 @@ class WaitingViewSet(viewsets.ModelViewSet):
         if not queryset.exists():
             return Response({
                 "status": "error",
-                "message": "대기 중인 내역이 없습니다.",
+                "message": "입장 호출된 내역이 없습니다.",
                 "code": status.HTTP_200_OK,
                 "data": None
             }, status=status.HTTP_200_OK)
 
         return Response({
             "status": "success",
-            "message": "대기중인 나의 대기 리스트 가져오기 성공!",
+            "message": "입장 리스트 가져오기 성공!",
             "code": status.HTTP_200_OK,
             "data": serializer.data
         })
