@@ -68,7 +68,13 @@ jobs:
             docker pull ${{ secrets.DOCKER_USERNAME }}/linenow:latest
 
             echo "🚀 새로운 컨테이너 실행..."
-            docker run -d --name linenow_backend -p 8000:8000 ${{ secrets.DOCKER_USERNAME }}/linenow:latest
+
+            docker run -d \
+            --name linenow_backend \
+            --network linenow-network \
+            -p 8000:8000 \
+            -e REDIS_HOST=redis-server \
+            ${{ secrets.DOCKER_USERNAME }}/linenow:latest
 
             # media 폴더를 컨테이너 내부로 복사
             if [ -d "/home/ubuntu/media" ]; then
