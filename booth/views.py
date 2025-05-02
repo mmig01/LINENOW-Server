@@ -134,7 +134,7 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
     
     # 부스 목록 - 대기 정보 조회
     def list(self, request, *args, **kwargs):
-        if not user.is_authenticated:
+        if not request.user or not request.user.is_authenticated:
             return Response({
                 "status": "error",
                 "message": "로그인 후 이용해주세요!",
@@ -159,7 +159,7 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
 
     # 부스 상세 - 대기 정보 조회
     def retrieve(self, request, *args, **kwargs):
-        if not user.is_authenticated:
+        if not request.user or not request.user.is_authenticated:
             return Response({
                 "status": "error",
                 "message": "로그인 후 이용해주세요!",
