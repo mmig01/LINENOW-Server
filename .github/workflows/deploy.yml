@@ -59,7 +59,7 @@ jobs:
             # ──────────────────────────────────────────────────────────
             # 1) 현재 Active 포트 확인 (upstream.conf에서)
             # ──────────────────────────────────────────────────────────
-            ACTIVE_PORT=$(sudo grep -Po '127\.0\.0\.1:\K\d+' /etc/nginx/conf.d/upstream.conf)
+            ACTIVE_PORT=$(sudo grep -Po '127\.0\.0\.1:\K\d+' /etc/nginx/sites-available/default)
             if [ "$ACTIVE_PORT" = "8000" ]; then
               INACTIVE_PORT=8001
               INACTIVE_NAME=linenow_green
@@ -101,9 +101,9 @@ jobs:
               --name $INACTIVE_NAME \
               --network linenow-network \
               -p ${INACTIVE_PORT}:${INACTIVE_PORT} \
-              -v linenow_media:/media \        # Named Volume로 media 공유
+              -v linenow_media:/media \      
               -e REDIS_HOST=redis-server \
-              -e PORT=${INACTIVE_PORT} \       # 컨테이너가 해당 포트로 바인딩하도록
+              -e PORT=${INACTIVE_PORT} \    
               ${{ secrets.DOCKER_USERNAME }}/linenow:latest
 
             # ──────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ jobs:
             # 5) Nginx upstream 포트 교체 & reload
             # ──────────────────────────────────────────────────────────
             echo "🔄 Switching Nginx to port $INACTIVE_PORT"
-            sudo sed -i "s/127.0.0.1:${ACTIVE_PORT}/127.0.0.1:${INACTIVE_PORT}/" /etc/nginx/conf.d/upstream.conf
+            sudo sed -i "s/127.0.0.1:${ACTIVE_PORT}/127.0.0.1:${INACTIVE_PORT}/" /etc/nginx/sites-available/default
             sudo nginx -t
             sudo systemctl reload nginx
 
