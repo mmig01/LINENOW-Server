@@ -25,6 +25,7 @@ class Waiting(models.Model):
     confirmed_at = models.DateTimeField(null=True, blank=True, verbose_name="대기 호출 시간")
     canceled_at = models.DateTimeField(null=True, blank=True, verbose_name="대기 취소 시간")
     arrived_at = models.CharField(max_length=10, null=True, blank=True, verbose_name="입장 시간")
+    notified_at = models.DateTimeField(null=True, blank=True)
     
     # created_at = models.DateTimeField(auto_now_add=True, verbose_name="대기 생성 시간")
     # updated_at = models.DateTimeField(auto_now=True, verbose_name="대기 업데이트 시간")
