@@ -102,6 +102,7 @@ jobs:
               --network linenow-network \
               -p ${INACTIVE_PORT}:${INACTIVE_PORT} \
               -e REDIS_HOST=redis-server \
+              -e PORT=${INACTIVE_PORT} \
               ${{ secrets.DOCKER_USERNAME }}/linenow:latest
 
             # ──────────────────────────────────────────────────────────
