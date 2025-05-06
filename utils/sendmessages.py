@@ -11,14 +11,18 @@ def sendsms(dest_phone, msg_body):
     # 데이터 형식 검증
     phone_pattern = re.compile(r'^\d{10,11}$')  # 10자리 또는 11자리 숫자만
     if not phone_pattern.match(dest_phone):
-        return {
-            "message": "Invalid destination phone number.",
-        }
+        return custom_response(
+            message="Invalid destination phone number.",
+            code=status.HTTP_400_BAD_REQUEST,
+            success=False
+        )
 
     if not isinstance(msg_body, str):
-        return {
-            "message": "Invalid message content.",
-        }
+        return custom_response(
+            message="Invalid message content.",
+            code=status.HTTP_400_BAD_REQUEST,
+            success=False
+        )
     
 
     headers = {
