@@ -75,7 +75,7 @@ jobs:
           
             echo "기존 media 파일 외부로 복사"
             # media 폴더를 컨테이너 외부로 복사
-            if [ -d "$ACTIVE_NAME"/media ]; then
+            if [ -d "$ACTIVE_NAME":/media ]; then
               echo "media 폴더가 존재합니다. 복사 중..."
               docker cp "$ACTIVE_NAME":/media /home/ubuntu
             else
