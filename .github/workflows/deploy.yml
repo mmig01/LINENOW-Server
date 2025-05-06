@@ -108,7 +108,7 @@ jobs:
             echo "ubuntu/media 폴더를 컨테이너 내부로 복사 중..."
             if [ -d /home/ubuntu/media ]; then
               echo "media 폴더가 존재합니다. 컨테이너 내부로 복사 중..."
-              docker cp /home/ubuntu/media "$ACTIVE_NAME":/
+              docker cp /home/ubuntu/media "$INACTIVE_NAME":/
             else
               echo "외부에 media 폴더가 존재하지 않습니다."
             fi
