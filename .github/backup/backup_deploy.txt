@@ -1,0 +1,97 @@
+name: Deploy to AWS EC2
+
+on:
+  pull_request_target:           # pull_request_target 이벤트는 'base' repo에만 secrets를 전달합니다
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  deploy:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ GitHub 레포지토리 코드 체크아웃
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Docker Hub 로그인
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 3️⃣ Docker 이미지 빌드 및 Docker Hub에 푸시 (빌드 시 GitHub Secrets 사용)
+      - name: Build and Push Docker Image
+        run: |
+          docker build --platform linux/amd64 \
+            --build-arg DEBUG=${{ secrets.DEBUG }} \
+            --build-arg SECRET_KEY=${{ secrets.SECRET_KEY }} \
+            --build-arg DJANGO_DEPLOY=${{ secrets.DJANGO_DEPLOY }} \
+            --build-arg DB_ENGINE=${{ secrets.DB_ENGINE }} \
+            --build-arg DB_NAME=${{ secrets.DB_NAME }} \
+            --build-arg DB_USER=${{ secrets.DB_USER }} \
+            --build-arg DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            --build-arg DB_HOST=${{ secrets.DB_HOST }} \
+            --build-arg DB_PORT=${{ secrets.DB_PORT }} \
+            --build-arg SMS_TOKEN_KEY=${{ secrets.SMS_TOKEN_KEY }} \
+            --build-arg SMS_API_KEY=${{ secrets.SMS_API_KEY }} \
+            --build-arg SEND_PHONE=${{ secrets.SEND_PHONE }} \
+            --build-arg SSODAA_BASE_URL=${{ secrets.SSODAA_BASE_URL }} \
+            --build-arg REDIS_HOST=${{ secrets.REDIS_HOST }} \
+            -t ${{ secrets.DOCKER_USERNAME }}/linenow:latest .
+          
+          docker push ${{ secrets.DOCKER_USERNAME }}/linenow:latest
+
+      # 4️⃣ EC2 서버에 SSH 접속 후 최신 컨테이너 배포
+      - name: Deploy to AWS EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "기존 media 파일 삭제"
+            if [ -d "/home/ubuntu/media" ]; then
+              rm -rf /home/ubuntu/media
+            else
+              echo "🚨 /home/ubuntu/media 폴더가 없습니다. Skipping deletion."
+            fi
+
+            echo "기존 media 파일 복사"
+            # media 폴더를 컨테이너 외부로 복사
+            docker cp linenow_backend:/media /home/ubuntu
+            
+            echo "🔄 기존 컨테이너 중지 및 삭제..."
+            docker stop linenow_backend || true
+            docker rm linenow_backend || true
+            
+            echo "🧹 불필요한 Docker 이미지 정리..."
+            docker image prune -a -f
+
+            echo "⬇️ 최신 Docker 이미지 Pull..."
+            docker pull ${{ secrets.DOCKER_USERNAME }}/linenow:latest
+
+            echo "🚀 새로운 컨테이너 실행..."
+
+            docker run -d \
+            --name linenow_backend \
+            --network linenow-network \
+            -p 8000:8000 \
+            -e REDIS_HOST=redis-server \
+            ${{ secrets.DOCKER_USERNAME }}/linenow:latest
+
+            # media 폴더를 컨테이너 내부로 복사
+            if [ -d "/home/ubuntu/media" ]; then
+              echo "🔄 media 폴더 컨테이너 내부로 복사..."
+              docker cp /home/ubuntu/media linenow_backend:/
+            else
+              echo "🚨 /home/ubuntu/media 폴더가 없습니다. Skipping copy."
+            fi
+
+            echo "🛠 데이터베이스 마이그레이션 실행..."
+            docker exec linenow_backend python manage.py migrate
+
+            echo "✅ 배포 완료!"
