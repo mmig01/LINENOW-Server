@@ -150,7 +150,7 @@ class UserViewSet(viewsets.ViewSet):
     
     @action(detail=False, methods=['post'], url_path='logout')
     def logout(self, request):
-         # access 토큰을 통한 인증이 필요
+        # access 토큰을 통한 인증이 필요
         if not request.user or not request.user.is_authenticated:
             return Response({
                 "status": "error",
@@ -222,6 +222,39 @@ class UserViewSet(viewsets.ViewSet):
                     {"detail": str(e)}
                 ]
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    @action(detail=False, methods=['get'], url_path='blackuser')
+    def is_black_user(self, request):
+         # access 토큰을 통한 인증이 필요
+        if not request.user or not request.user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "인증이 필요합니다.",
+                "code": 401,
+                "data": [
+                    {"detail": "유효한 access 토큰이 필요합니다."}
+                ]
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        user = request.user
+        customer_user = get_object_or_404(CustomerUser, user=user)
+        if customer_user.no_show_num >= 2:
+            return Response({
+                "status": "success",
+                "message": "블랙리스트 사용자입니다.",
+                "code": 200,
+                "data": [
+                    {"is_black_user": True}
+                ]
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "status": "success",
+                "message": "정상 사용자입니다.",
+                "code": 200,
+                "data": [
+                    {"is_black_user": False}
+                ]
+            }, status=status.HTTP_200_OK)
         
 class SMSViewSet(viewsets.ViewSet):
     """

@@ -18,6 +18,7 @@ ARG SMS_TOKEN_KEY
 ARG SMS_API_KEY
 ARG SEND_PHONE
 ARG SSODAA_BASE_URL
+ARG REDIS_HOST
 
 # 4. 환경 변수를 Docker 컨테이너 내부에 설정
 ENV SECRET_KEY=${SECRET_KEY}
@@ -33,7 +34,7 @@ ENV SMS_TOKEN_KEY=${SMS_TOKEN_KEY}
 ENV SMS_API_KEY=${SMS_API_KEY}
 ENV SEND_PHONE=${SEND_PHONE}
 ENV SSODAA_BASE_URL=${SSODAA_BASE_URL}
-
+ENV REDIS_HOST=${REDIS_HOST}
 
 # 5. 로컬의 Django 프로젝트 파일을 컨테이너 내부로 복사
 COPY . /
@@ -46,4 +47,4 @@ RUN python manage.py collectstatic --noinput
 RUN python manage.py migrate
 
 # 8. Gunicorn 실행 (Django 서버 실행)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "linenow.wsgi:application"]
+CMD ["daphne",   "-b", "0.0.0.0", "-p", "8000", "linenow.asgi:application"]
