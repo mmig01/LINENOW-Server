@@ -20,6 +20,10 @@ ARG SEND_PHONE
 ARG SSODAA_BASE_URL
 ARG REDIS_HOST
 
+# ★ 3-1. 런타임 바인딩 포트 (기본 8000)
+ARG PORT=8000
+ENV PORT=${PORT}
+
 # 4. 환경 변수를 Docker 컨테이너 내부에 설정
 ENV SECRET_KEY=${SECRET_KEY}
 ENV DEBUG=${DEBUG}
@@ -47,4 +51,4 @@ RUN python manage.py collectstatic --noinput
 RUN python manage.py migrate
 
 # 8. Gunicorn 실행 (Django 서버 실행)
-CMD ["daphne",   "-b", "0.0.0.0", "-p", "8000", "linenow.asgi:application"]
+CMD ["sh", "-c", "daphne -b 0.0.0.0 -p ${PORT} linenow.asgi:application"]
