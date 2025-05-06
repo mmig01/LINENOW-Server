@@ -53,9 +53,16 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            echo "기존 media 파일 삭제"
+            if [ -d "/home/ubuntu/media" ]; then
+              rm -rf /home/ubuntu/media
+            else
+              echo "🚨 /home/ubuntu/media 폴더가 없습니다. Skipping deletion."
+            fi
+
             echo "기존 media 파일 복사"
             # media 폴더를 컨테이너 외부로 복사
-            docker cp linenow_backend:/media /home/ubuntu/media
+            docker cp linenow_backend:/media /home/ubuntu
             
             echo "🔄 기존 컨테이너 중지 및 삭제..."
             docker stop linenow_backend || true
