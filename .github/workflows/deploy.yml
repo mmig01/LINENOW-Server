@@ -79,7 +79,7 @@ jobs:
               echo "media 폴더가 존재합니다. 복사 중..."
               docker cp "$ACTIVE_NAME":/media /home/ubuntu
             else
-              echo "media 폴더가 존재하지 않습니다."
+              echo "컨테이너 내에 media 폴더가 존재하지 않습니다."
             fi
 
             # ──────────────────────────────────────────────────────────
@@ -88,8 +88,6 @@ jobs:
             echo "🔄 기존 컨테이너 중지 및 삭제..."
             docker rm -f "$INACTIVE_NAME" || true
 
-            echo "🧹 불필요한 Docker 이미지 정리..."
-            docker image prune -a -f
             # ──────────────────────────────────────────────────────────
             # 3) 최신 이미지 Pull & 새 컨테이너 실행
             # ──────────────────────────────────────────────────────────
@@ -125,5 +123,8 @@ jobs:
             # ──────────────────────────────────────────────────────────
             echo "🗑️ Removing old container $ACTIVE_NAME"
             docker rm -f "$ACTIVE_NAME" || true
+
+            echo "🧹 불필요한 Docker 이미지 정리..."
+            docker image prune -a -f
 
             echo "✅ Blue‑Green 배포 완료! New live: $INACTIVE_NAME on $INACTIVE_PORT"
