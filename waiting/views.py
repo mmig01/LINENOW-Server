@@ -33,14 +33,6 @@ class WaitingViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         user = request.user
-        custom_user = CustomerUser.objects.filter(user=user).first()
-        if not custom_user:
-            return Response({
-                "status": "error",
-                "message": "고객 정보가 존재하지 않습니다.",
-                "code": status.HTTP_404_NOT_FOUND,
-                "data": None
-            }, status=status.HTTP_404_NOT_FOUND)
 
         if not user.is_authenticated:
             return Response({
@@ -50,6 +42,15 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         
+        custom_user = CustomerUser.objects.filter(user=user).first()
+        if not custom_user:
+            return Response({
+                "status": "error",
+                "message": "고객 정보가 존재하지 않습니다.",
+                "code": status.HTTP_404_NOT_FOUND,
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+
         if user.is_manager == True:
             return Response({
                 "status": "error",
@@ -155,6 +156,8 @@ class WaitingViewSet(viewsets.ModelViewSet):
     
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
+        custom_user = CustomerUser.objects.filter(user=request.user).first()
+
         if not request.user.is_authenticated:
             return Response({
                 "status": "error",
@@ -162,6 +165,14 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "code": status.HTTP_401_UNAUTHORIZED,
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not custom_user:
+            return Response({
+                "status": "error",
+                "message": "고객 정보가 존재하지 않습니다.",
+                "code": status.HTTP_404_NOT_FOUND,
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
         
         if request.user.is_manager == True:
             return Response({
@@ -284,10 +295,19 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         
+        custom_user = CustomerUser.objects.filter(user=user).first()
+        if not custom_user:
+            return Response({
+                "status": "error",
+                "message": "고객 정보가 존재하지 않습니다.",
+                "code": status.HTTP_404_NOT_FOUND,
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+        
         if user.is_manager == True:
             return Response({
                 "status": "error",
-                "message": "관리자는 대기 신청이 불가능합니다.",
+                "message": "대기 취소에 대한 권한이 없습니다.",
                 "code": status.HTTP_400_BAD_REQUEST,
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
@@ -343,7 +363,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "code": status.HTTP_401_UNAUTHORIZED,
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
-        
+
         if user.is_manager == False:
             return Response({
                 "status": "error",
@@ -515,10 +535,10 @@ class WaitingViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(f"Error scheduling task: {e}")
 
-        sms_status = "입장해주세요."
+        sms_status = "입장해주세요!"
         self.sms_sending(waiting.booth, sms_status, waiting.waiting_id)
 
-        sms_status_2 = "입장 준비해주세요."
+        sms_status_2 = "입장 준비해주세요!"
         self.sms_sending(waiting.booth, sms_status_2)
 
         # serializer = WaitingDetailSerializer(waiting)
@@ -613,6 +633,23 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         
+        custom_user = CustomerUser.objects.filter(user=user).first()
+        if not custom_user:
+            return Response({
+                "status": "error",
+                "message": "고객 정보가 존재하지 않습니다.",
+                "code": status.HTTP_404_NOT_FOUND,
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if user.is_manager == True:
+            return Response({
+                "status": "error",
+                "message": "대기 선택에 대한 권한이 없습니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         waiting = get_object_or_404(Waiting, waiting_id=pk)
 
         if waiting.waiting_status != "entering":
@@ -678,6 +715,23 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         
+        custom_user = CustomerUser.objects.filter(user=user).first()
+        if not custom_user:
+            return Response({
+                "status": "error",
+                "message": "고객 정보가 존재하지 않습니다.",
+                "code": status.HTTP_404_NOT_FOUND,
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if user.is_manager == True:
+            return Response({
+                "status": "error",
+                "message": "대기 취소에 대한 권한이 없습니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         queryset = Waiting.objects.filter(user=user, waiting_status="entering")
         entering_waitings = Waiting.objects.filter(user=user, waiting_status='entering')
 
@@ -715,7 +769,23 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         
-
+        custom_user = CustomerUser.objects.filter(user=user).first()
+        if not custom_user:
+            return Response({
+                "status": "error",
+                "message": "고객 정보가 존재하지 않습니다.",
+                "code": status.HTTP_404_NOT_FOUND,
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if user.is_manager == True:
+            return Response({
+                "status": "error",
+                "message": "대기 취소에 대한 권한이 없습니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         waitings = Waiting.objects.filter(
             user=user,
             waiting_status="entering"
@@ -773,6 +843,23 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         
+        custom_user = CustomerUser.objects.filter(user=user).first()
+        if not custom_user:
+            return Response({
+                "status": "error",
+                "message": "고객 정보가 존재하지 않습니다.",
+                "code": status.HTTP_404_NOT_FOUND,
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if user.is_manager == True:
+            return Response({
+                "status": "error",
+                "message": "해당 요청에 대한 권한이 없습니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         queryset = Waiting.objects.filter(user=user, waiting_status="waiting")
         entering_waitings = Waiting.objects.filter(user=user, waiting_status='waiting')
 
@@ -809,6 +896,23 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "code": status.HTTP_401_UNAUTHORIZED,
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        custom_user = CustomerUser.objects.filter(user=user).first()
+        if not custom_user:
+            return Response({
+                "status": "error",
+                "message": "고객 정보가 존재하지 않습니다.",
+                "code": status.HTTP_404_NOT_FOUND,
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if user.is_manager == True:
+            return Response({
+                "status": "error",
+                "message": "대기 취소에 대한 권한이 없습니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
         
         entering_waiting = Waiting.objects.filter(user=user, waiting_status="entering")
 
@@ -869,8 +973,25 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         
+        custom_user = CustomerUser.objects.filter(user=user).first()
+        if not custom_user:
+            return Response({
+                "status": "error",
+                "message": "고객 정보가 존재하지 않습니다.",
+                "code": status.HTTP_404_NOT_FOUND,
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if user.is_manager == True:
+            return Response({
+                "status": "error",
+                "message": "해당 요청에 대한 권한이 없습니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         # 대기 중인 내역 가져오기
-        queryset = Waiting.objects.filter(user=user, waiting_status="waiting")
+        queryset = Waiting.objects.filter(user=user, waiting_status__in=["waiting", "entering"])
         serializer = WaitingListSerializer(queryset, many=True)
 
         if not queryset.exists():
@@ -899,8 +1020,25 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         
-        waiting_count = Waiting.objects.filter(user=user, waiting_status="waiting").count()
-        waiting_finished_count = Waiting.objects.filter(user=user).exclude(waiting_status="waiting").count()
+        custom_user = CustomerUser.objects.filter(user=user).first()
+        if not custom_user:
+            return Response({
+                "status": "error",
+                "message": "고객 정보가 존재하지 않습니다.",
+                "code": status.HTTP_404_NOT_FOUND,
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if user.is_manager == True:
+            return Response({
+                "status": "error",
+                "message": "해당 요청에 대한 권한이 없습니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        waiting_count = Waiting.objects.filter(user=user, waiting_status__in=["waiting", "entering"]).count()
+        waiting_finished_count = Waiting.objects.filter(user=user).exclude(waiting_status__in=["waiting", "entering"]).count()
 
         return Response({
             "status": "success",
@@ -923,8 +1061,25 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         
+        custom_user = CustomerUser.objects.filter(user=user).first()
+        if not custom_user:
+            return Response({
+                "status": "error",
+                "message": "고객 정보가 존재하지 않습니다.",
+                "code": status.HTTP_404_NOT_FOUND,
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if user.is_manager == True:
+            return Response({
+                "status": "error",
+                "message": "해당 요청에 대한 권한이 없습니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         # 종료된 대기 내역 가져오기
-        queryset = Waiting.objects.filter(user=user).exclude(waiting_status="waiting")
+        queryset = Waiting.objects.filter(user=user).exclude(waiting_status__in=["waiting", "entering"])
         serializer = WaitingListSerializer(queryset, many=True)
         
         data = []
