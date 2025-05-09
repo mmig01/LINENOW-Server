@@ -1,5 +1,5 @@
-# 1. Python 3.13 기반 Docker 이미지 사용
-FROM python:3.13
+# 1. Python 3.12 기반 Docker 이미지 사용
+FROM python:3.12
 
 # 2. 작업 디렉토리 설정
 WORKDIR /
