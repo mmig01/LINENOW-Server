@@ -6,6 +6,8 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'linenow.settings')
 
 app = Celery('linenow')
 
+app.conf.broker_url = 'redis://localhost:6379/0'
+
 # Django 설정에서 Celery 관련 설정 불러오기
 app.config_from_object('django.conf:settings', namespace='CELERY')
 

@@ -194,6 +194,8 @@ else:
     CELERY_TASK_SERIALIZER = 'json'
     CELERY_TIMEZONE = 'Asia/Seoul'
 
+print(f'CELERY_BROKER_URL: {CELERY_BROKER_URL}')
+
 # 데이터베이스 설정
 if IS_DEPLOY == 'True':
     # 배포 환경: PostgreSQL 사용
