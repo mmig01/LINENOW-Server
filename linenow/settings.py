@@ -41,7 +41,7 @@ ALLOWED_HOSTS = ['*']
 SMS_TOKEN_KEY = env("SMS_TOKEN_KEY")
 SMS_API_KEY = env("SMS_API_KEY")
 SEND_PHONE = env("SEND_PHONE")
-SSODAA_BASE_URL = env("SSODAA_BASE_URL")
+SSODAA_BASE_URL = env("SSODAA_BASE_URL").replace("\\x3a", ":")
 
 CSRF_TRUSTED_ORIGINS = ['https://linenow-backend.store', 'http://127.0.0.1:8000', SSODAA_BASE_URL]
 
