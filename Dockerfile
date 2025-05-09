@@ -1,5 +1,5 @@
-# 1. Python 3.13 기반 Docker 이미지 사용
-FROM python:3.13
+# 1. Python 3.12 기반 Docker 이미지 사용
+FROM python:3.12
 
 # 2. 작업 디렉토리 설정
 WORKDIR /
@@ -20,6 +20,10 @@ ARG SEND_PHONE
 ARG SSODAA_BASE_URL
 ARG REDIS_HOST
 
+# ★ 3-1. 런타임 바인딩 포트 (기본 8000)
+ARG PORT=8000
+ENV PORT=${PORT}
+
 # 4. 환경 변수를 Docker 컨테이너 내부에 설정
 ENV SECRET_KEY=${SECRET_KEY}
 ENV DEBUG=${DEBUG}
@@ -35,6 +39,9 @@ ENV SMS_API_KEY=${SMS_API_KEY}
 ENV SEND_PHONE=${SEND_PHONE}
 ENV SSODAA_BASE_URL=${SSODAA_BASE_URL}
 ENV REDIS_HOST=${REDIS_HOST}
+# Celery broker configuration
+ENV CELERY_BROKER_URL=redis://${REDIS_HOST}:6379/0
+ENV CELERY_RESULT_BACKEND=${CELERY_BROKER_URL}
 
 # 5. 로컬의 Django 프로젝트 파일을 컨테이너 내부로 복사
 COPY . /
@@ -47,4 +54,4 @@ RUN python manage.py collectstatic --noinput
 RUN python manage.py migrate
 
 # 8. Gunicorn 실행 (Django 서버 실행)
-CMD ["daphne",   "-b", "0.0.0.0", "-p", "8000", "linenow.asgi:application"]
+CMD ["sh", "-c", "daphne -b 0.0.0.0 -p ${PORT} linenow.asgi:application"]

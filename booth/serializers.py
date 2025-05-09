@@ -13,24 +13,24 @@ class BoothImageSerializer(serializers.ModelSerializer):
         fields = ['booth_image_id', 'booth_image']
 
 class BoothListSerializer(serializers.ModelSerializer):
-    thumbnail = serializers.SerializerMethodField()
+    booth_thumbnail = serializers.SerializerMethodField()
 
     class Meta:
         model = Booth
-        fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'operating_status', 'thumbnail']
+        fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'operating_status', 'booth_thumbnail']
 
-    def get_thumbnail(self, obj):
+    def get_booth_thumbnail(self, obj):
         # 상대 경로
-        # thumbnail = obj.BoothImages.first()
-        # if thumbnail:
-        #     return thumbnail.image.url
+        # booth_thumbnail = obj.BoothImages.first()
+        # if booth_thumbnail:
+        #     return booth_thumbnail.image.url
         # return ''
         
         # 절대 경로
         request = self.context.get('request')
-        thumbnail = obj.booth_images.first()
-        if thumbnail and request:
-            return request.build_absolute_uri(thumbnail.booth_image.url)
+        booth_thumbnail = obj.booth_images.first()
+        if booth_thumbnail and request:
+            return request.build_absolute_uri(booth_thumbnail.booth_image.url)
         return ''
     
 class BoothWaitingListSerializer(serializers.ModelSerializer):
@@ -66,12 +66,12 @@ class BoothWaitingListSerializer(serializers.ModelSerializer):
         return None
 
 class BoothDetailSerializer(serializers.ModelSerializer):
-    menu_info = BoothMenuSerializer(many=True, source='booth_menus')
+    booth_menu_info = BoothMenuSerializer(many=True, source='booth_menus')
     booth_image_info = BoothImageSerializer(source='booth_images', many=True)
 
     class Meta:
         model = Booth
-        fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'booth_latitude', 'booth_longitude', 'booth_notice', 'operating_status', 'booth_start_time', 'menu_info', 'booth_image_info']
+        fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'booth_latitude', 'booth_longitude', 'booth_notice', 'operating_status', 'booth_start_time', 'booth_menu_info', 'booth_image_info']
 
 class BoothWaitingDetailSerializer(serializers.ModelSerializer):
     waiting_id = serializers.SerializerMethodField()
