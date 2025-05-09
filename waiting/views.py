@@ -243,7 +243,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
         
         elif status == "입장해주세요!":
             enter_waiting = get_object_or_404(Waiting, waiting_id=waiting_id)
-            if waiting:
+            if enter_waiting:
                 phone = enter_waiting.user.user_phone.replace("-", "")
                 message = f"[{booth.booth_name}] 대기가 호출되었습니다. 10분 내에 입장해주세요!"
 
@@ -530,16 +530,22 @@ class WaitingViewSet(viewsets.ModelViewSet):
             print(f"WebSocket send error: {str(e)}")
 
         try:
+            sms_status = "입장해주세요!"
+            self.sms_sending(waiting.booth, sms_status, waiting.waiting_id)
+        except Exception as e:
+            print(f"Error 입장: {e}")
+
+        try:
+            sms_status_2 = "입장 준비해주세요!"
+            self.sms_sending(waiting.booth, sms_status_2)
+        except Exception as e:
+            print(f"Error 입장 준비: {e}")
+
+        try:
             mark_waiting_as_time_over.apply_async(args=[pk], countdown=600)
             print("Celery task scheduled successfully!")
         except Exception as e:
             print(f"Error scheduling task: {e}")
-
-        sms_status = "입장해주세요!"
-        self.sms_sending(waiting.booth, sms_status, waiting.waiting_id)
-
-        sms_status_2 = "입장 준비해주세요!"
-        self.sms_sending(waiting.booth, sms_status_2)
 
         # serializer = WaitingDetailSerializer(waiting)
         return custom_response(
