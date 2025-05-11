@@ -144,7 +144,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            serializer = WaitingDetailSerializer(waiting)  
+            serializer = WaitingDetailSerializer(waiting, context={'request': request})  
         
         except Exception as e:
             raise e
@@ -702,7 +702,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
         sms_status_2 = "입장 준비해주세요."
         self.sms_sending(waiting.booth, sms_status_2)
 
-        serializer = WaitingListSerializer(waiting)
+        serializer = WaitingListSerializer(waiting, context={'request': request})
         return custom_response(
             data=serializer.data,
             message="대기 입장을 확정하였습니다.",
@@ -998,7 +998,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
         
         # 대기 중인 내역 가져오기
         queryset = Waiting.objects.filter(user=user, waiting_status__in=["waiting", "entering"])
-        serializer = WaitingListSerializer(queryset, many=True)
+        serializer = WaitingListSerializer(queryset, many=True, context={'request': request})
 
         if not queryset.exists():
             return Response({
@@ -1086,7 +1086,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
         
         # 종료된 대기 내역 가져오기
         queryset = Waiting.objects.filter(user=user).exclude(waiting_status__in=["waiting", "entering"])
-        serializer = WaitingListSerializer(queryset, many=True)
+        serializer = WaitingListSerializer(queryset, many=True, context={'request': request})
         
         data = []
         for item in serializer.data:
