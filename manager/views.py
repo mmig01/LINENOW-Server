@@ -127,6 +127,7 @@ class ManagerViewSet(viewsets.ViewSet):
                         "manager_id": manager_user.id,
                         "manager_name": manager_user.user.user_name,
                         "booth_id": manager_user.booth.booth_id,
+                        "operating_status": manager_user.booth.operating_status,
                     }
                 }
             ]
