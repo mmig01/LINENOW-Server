@@ -16,6 +16,13 @@ def mark_waiting_as_time_over(waiting_id):
             customer_user.save()
 
             waiting.save()
+
+            waiting_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='waiting').count()
+            entering_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entering').count()
+            entered_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entered').count()
+            canceled_team_cnt = (Waiting.objects.filter(booth=waiting.booth, waiting_status='canceled').count() + 
+                                Waiting.objects.filter(booth=waiting.booth, waiting_status='time_over').count())
+
             try:
                 channel_layer = get_channel_layer()
                 admin_group_name = f"booth_{waiting.booth.booth_id}_admin"
@@ -29,6 +36,12 @@ def mark_waiting_as_time_over(waiting_id):
                         'data': {
                             'waiting_id': waiting.waiting_id,
                             'waiting_status': waiting.waiting_status,
+                            'booth_info': {
+                                'waiting_team_cnt': waiting_team_cnt,
+                                'entering_team_cnt': entering_team_cnt,
+                                'entered_team_cnt': entered_team_cnt,
+                                'canceled_team_cnt': canceled_team_cnt
+                            }
                         }
                     }
                 )
