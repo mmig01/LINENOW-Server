@@ -229,7 +229,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
                         print(f"문자 발송 실패: {response.data['message']}")
 
                 except Exception as e:
-                    print(f"문자 발송 오류: {str(e)}")
+                    print(f"문자 발송 오류1: {str(e)}")
 
         elif status == "입장 준비해주세요!":
             waiting_list = Waiting.objects.filter(
@@ -248,12 +248,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
                         response = sendsms(phone, message)
                         # response = sms_test(phone, message)
 
-                        if response['code'] == 200:  # 성공적인 문자 발송
+                        if response.data['code'] == 200:  # 성공적인 문자 발송
                             # 문자 발송 시간 기록
                             target_waiting.notified_at = timezone.now()
                             target_waiting.save()
                         else:  # 문자 발송 실패
-                            print(f"문자 발송 실패: {response['message']}")
+                            print(f"문자 발송 실패2: {response.data['message']}")
         
         elif status == "입장해주세요!":
             enter_waiting = get_object_or_404(Waiting, waiting_id=waiting_id)
@@ -266,10 +266,10 @@ class WaitingViewSet(viewsets.ModelViewSet):
                     response = sendsms(phone, message)
                     # response = sms_test(phone, message)
 
-                    if response['code'] == 200:  # 문자 발송 성공
-                        print(f"대기 신청 완료 문자 발송 성공: {response['message']}")
+                    if response.data['code'] == 200:  # 문자 발송 성공
+                        print(f"대기 신청 완료 문자 발송 성공: {response.data['message']}")
                     else:  # 문자 발송 실패
-                        print(f"문자 발송 실패: {response['message']}")
+                        print(f"문자 발송 실패3: {response.data['message']}")
 
                 except Exception as e:
                     print(f"문자 발송 오류: {str(e)}")
@@ -286,13 +286,13 @@ class WaitingViewSet(viewsets.ModelViewSet):
                     response = sendsms(phone, message)
                     # response = sms_test(phone, message)
 
-                    if response['code'] == 200:  # 문자 발송 성공
-                        print(f"대기 신청 완료 문자 발송 성공: {response['message']}")
+                    if response.data['code'] == 200:  # 문자 발송 성공
+                        print(f"대기 신청 완료 문자 발송 성공: {response.data['message']}")
                     else:  # 문자 발송 실패
-                        print(f"문자 발송 실패: {response['message']}")
+                        print(f"문자 발송 실패: {response.data['message']}")
 
                 except Exception as e:
-                    print(f"문자 발송 오류: {str(e)}")
+                    print(f"문자 발송 오류4: {str(e)}")
 
         else:
             print(f"적절하지 않은 상태입니다.", status)
