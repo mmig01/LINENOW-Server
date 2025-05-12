@@ -249,6 +249,11 @@ class ManagerViewSet(viewsets.ViewSet):
             booth.operating_status = operating_status
             booth.save()
 
+            # is_restart 필드가 False 인 상태에서 운영 상태가 operating으로 변경된다면 is_restart 필드를 True 로 변경
+            if booth.is_restart == False and booth.operating_status == 'operating':
+                booth.is_restart = True
+                booth.save()
+
             return custom_response(
                 data={'operating_status': booth.operating_status},
                 message='부스 운영 상태 변경 성공',
@@ -263,7 +268,49 @@ class ManagerViewSet(viewsets.ViewSet):
                 code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 success=False
             )
+        
+    @action(detail=False, methods=['get'], url_path='booth/is-restart')
+    def get_is_restart(self, request):
+        # 로그인 확인
+        if not request.user or not request.user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "인증이 필요합니다.",
+                "code": 401,
+                "data": [
+                    {"detail": "유효한 access 토큰이 필요합니다."}
+                ]
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        # 관리자 여부 확인
+        if not request.user.is_manager:
+            return custom_response(
+                data={'detail': "관리자 유저가 아닙니다."},
+                message='권한이 없습니다.',
+                code=403,
+                success=False
+            )
+        
+        try:
+            booth = request.user.manager_user.booth
+            is_restart = booth.is_restart
 
+            return custom_response(
+                data={
+                    'is_restart': is_restart,
+                    'operating_status': booth.operating_status
+                },
+                message='부스 재시작 여부 조회 성공',
+                code=status.HTTP_200_OK,
+                success=True
+            )
+
+        except Exception as e:
+            return custom_response(
+                data={'detail': str(e)},
+                message='부스 재시작 여부 조회 실패',
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                success=False
+            )
 # # 부스 웨이팅 조회
 # class BoothWaitingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
 #     serializer_class = ManagerWaitingListSerializer
