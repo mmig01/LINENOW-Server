@@ -103,6 +103,14 @@ class WaitingViewSet(viewsets.ModelViewSet):
         booth.current_waiting_num = waiting_num
         booth.save()
 
+        waiting_team_cnt = Waiting.objects.filter(booth=booth, waiting_status='waiting').count()
+        entering_team_cnt = Waiting.objects.filter(booth=booth, waiting_status='entering').count()
+        entered_team_cnt = Waiting.objects.filter(booth=booth, waiting_status='entered').count()
+        canceled_team_cnt = (Waiting.objects.filter(booth=booth, waiting_status='canceled').count() + 
+                            Waiting.objects.filter(booth=booth, waiting_status='time_over').count())
+
+
+
         try:
             channel_layer = get_channel_layer()
             admin_group_name = f"booth_{booth.booth_id}_admin"
@@ -125,6 +133,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
                         'user_info': {
                             'user_name': user.user_name,  # request.user 기준
                             'user_phone': user.user_phone,  # 필요에 따라 수정
+                        },
+                        'booth_info': {
+                            'waiting_team_cnt': waiting_team_cnt,
+                            'entering_team_cnt': entering_team_cnt,
+                            'entered_team_cnt': entered_team_cnt,
+                            'canceled_team_cnt': canceled_team_cnt
                         }
                     }
                 }
@@ -326,6 +340,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
         waiting.canceled_at = timezone.now()
         waiting.save()
 
+        waiting_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='waiting').count()
+        entering_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entering').count()
+        entered_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entered').count()
+        canceled_team_cnt = (Waiting.objects.filter(booth=waiting.booth, waiting_status='canceled').count() + 
+                            Waiting.objects.filter(booth=waiting.booth, waiting_status='time_over').count())
+
         # WebSocket 메시지 전송
         try:
             channel_layer = get_channel_layer()
@@ -340,6 +360,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
                     'data': {
                         'waiting_id': waiting.waiting_id,
                         'waiting_status': waiting.waiting_status,
+                        'booth_info': {
+                            'waiting_team_cnt': waiting_team_cnt,
+                            'entering_team_cnt': entering_team_cnt,
+                            'entered_team_cnt': entered_team_cnt,
+                            'canceled_team_cnt': canceled_team_cnt
+                        }
                     }
                 }
             )
@@ -381,6 +407,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
         booth_thumbnail = BoothImage.objects.filter(booth=waiting.booth.booth_id).first()
         booth_thumbnail_url = booth_thumbnail.booth_image.url if booth_thumbnail and booth_thumbnail.booth_image else None
         
+        waiting_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='waiting').count()
+        entering_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entering').count()
+        entered_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entered').count()
+        canceled_team_cnt = (Waiting.objects.filter(booth=waiting.booth, waiting_status='canceled').count() + 
+                            Waiting.objects.filter(booth=waiting.booth, waiting_status='time_over').count())
+
         try:
             channel_layer = get_channel_layer()
             admin_group_name = f"booth_{waiting.booth.booth_id}_admin"
@@ -394,6 +426,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
                     'data': {
                         'waiting_id': waiting.waiting_id,
                         'waiting_status': waiting.waiting_status,
+                        'booth_info': {
+                            'waiting_team_cnt': waiting_team_cnt,
+                            'entering_team_cnt': entering_team_cnt,
+                            'entered_team_cnt': entered_team_cnt,
+                            'canceled_team_cnt': canceled_team_cnt
+                        }
                     }
                 }
             )
@@ -468,6 +506,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
         booth_thumbnail = BoothImage.objects.filter(booth=waiting.booth.booth_id).first()
         booth_thumbnail_url = booth_thumbnail.booth_image.url if booth_thumbnail and booth_thumbnail.booth_image else None
 
+        waiting_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='waiting').count()
+        entering_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entering').count()
+        entered_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entered').count()
+        canceled_team_cnt = (Waiting.objects.filter(booth=waiting.booth, waiting_status='canceled').count() + 
+                            Waiting.objects.filter(booth=waiting.booth, waiting_status='time_over').count())
+
         try:
             channel_layer = get_channel_layer()
 
@@ -483,6 +527,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
                     'data': {
                         'waiting_id': waiting.waiting_id,
                         'waiting_status': waiting.waiting_status,
+                        'booth_info': {
+                            'waiting_team_cnt': waiting_team_cnt,
+                            'entering_team_cnt': entering_team_cnt,
+                            'entered_team_cnt': entered_team_cnt,
+                            'canceled_team_cnt': canceled_team_cnt
+                        }
                     }
                 }
             )
@@ -600,6 +650,13 @@ class WaitingViewSet(viewsets.ModelViewSet):
         
         # 저장
         waiting.save()
+
+        waiting_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='waiting').count()
+        entering_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entering').count()
+        entered_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entered').count()
+        canceled_team_cnt = (Waiting.objects.filter(booth=waiting.booth, waiting_status='canceled').count() + 
+                            Waiting.objects.filter(booth=waiting.booth, waiting_status='time_over').count())
+
         try:
             channel_layer = get_channel_layer()
             admin_group_name = f"booth_{waiting.booth.booth_id}_admin"
@@ -675,6 +732,13 @@ class WaitingViewSet(viewsets.ModelViewSet):
         for cancel_waiting in cancel_waitings:
             cancel_waiting.waiting_status = "canceled"
             cancel_waiting.save()
+            
+            waiting_team_cnt = Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='waiting').count()
+            entering_team_cnt = Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='entering').count()
+            entered_team_cnt = Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='entered').count()
+            canceled_team_cnt = (Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='canceled').count() + 
+                                Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='time_over').count())
+
 
             sms_status_2 = "입장 준비해주세요."
             self.sms_sending(cancel_waiting.booth, sms_status_2)
@@ -693,6 +757,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
                         'data': {
                             'waiting_id': cancel_waiting.waiting_id,
                             'waiting_status': cancel_waiting.waiting_status,
+                            'booth_info': {
+                                'waiting_team_cnt': waiting_team_cnt,
+                                'entering_team_cnt': entering_team_cnt,
+                                'entered_team_cnt': entered_team_cnt,
+                                'canceled_team_cnt': canceled_team_cnt
+                            }
                         }
                     }
                 )
@@ -809,6 +879,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
             cancel_waiting.waiting_status = "canceled"
             cancel_waiting.save()
 
+            waiting_team_cnt = Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='waiting').count()
+            entering_team_cnt = Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='entering').count()
+            entered_team_cnt = Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='entered').count()
+            canceled_team_cnt = (Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='canceled').count() + 
+                                Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='time_over').count())
+
             sms_status_2 = "입장 준비해주세요."
             self.sms_sending(cancel_waiting.booth, sms_status_2)
 
@@ -825,6 +901,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
                         'data': {
                             'waiting_id': cancel_waiting.waiting_id,
                             'waiting_status': cancel_waiting.waiting_status,
+                            'booth_info': {
+                                'waiting_team_cnt': waiting_team_cnt,
+                                'entering_team_cnt': entering_team_cnt,
+                                'entered_team_cnt': entered_team_cnt,
+                                'canceled_team_cnt': canceled_team_cnt
+                            }
                         }
                     }
                 )
@@ -940,6 +1022,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
             cancel_waiting.waiting_status = "canceled"
             cancel_waiting.save()
 
+            waiting_team_cnt = Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='waiting').count()
+            entering_team_cnt = Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='entering').count()
+            entered_team_cnt = Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='entered').count()
+            canceled_team_cnt = (Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='canceled').count() + 
+                                Waiting.objects.filter(booth=cancel_waiting.booth, waiting_status='time_over').count())
+
             sms_status_2 = "입장 준비해주세요."
             self.sms_sending(cancel_waiting.booth, sms_status_2)
 
@@ -956,6 +1044,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
                         'data': {
                             'waiting_id': cancel_waiting.waiting_id,
                             'waiting_status': cancel_waiting.waiting_status,
+                            'booth_info': {
+                                'waiting_team_cnt': waiting_team_cnt,
+                                'entering_team_cnt': entering_team_cnt,
+                                'entered_team_cnt': entered_team_cnt,
+                                'canceled_team_cnt': canceled_team_cnt
+                            }
                         }
                     }
                 )
