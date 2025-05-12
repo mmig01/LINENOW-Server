@@ -30,7 +30,7 @@ class Booth(models.Model):
     booth_latitude = models.CharField(max_length=255, verbose_name="부스 위치 위도")
     booth_longitude = models.CharField(max_length=255, verbose_name="부스 위치 경도")
     operating_status = models.CharField(max_length=100, choices=STATUS_CHOICES, verbose_name="부스 운영 상태")
-    current_watiting_num = models.IntegerField(verbose_name="최신 대기 번호")
+    current_waiting_num = models.IntegerField(verbose_name="최신 대기 번호")
 
     def __str__(self):
         return self.booth_name

@@ -32,7 +32,9 @@ idna==3.10
 incremental==24.7.2
 kombu==5.4.1
 msgpack==1.1.0
+numpy==2.2.5
 packaging==24.1
+pandas==2.2.3
 pillow==10.4.0
 prompt_toolkit==3.0.47
 psycopg2-binary==2.9.10
@@ -42,6 +44,7 @@ pycparser==2.22
 PyJWT==2.9.0
 pyOpenSSL==25.0.0
 python-dateutil==2.9.0.post0
+pytz==2025.2
 redis==5.0.8
 requests==2.32.3
 service-identity==24.2.0

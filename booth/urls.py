@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework import routers
 
-from .views import BoothViewSet, BoothWaitingStatusViewSet
+from .views import BoothViewSet, BoothWaitingStatusViewSet, BoothDataView
 
 app_name = 'booth'
 
@@ -14,4 +14,5 @@ booth_waiting_router.register(r'booths-waiting', BoothWaitingStatusViewSet, base
 urlpatterns = [
     path('', include(booth_router.urls)),
     path('', include(booth_waiting_router.urls)),
+    path('upload-booth-data', BoothDataView.as_view(), name="upload_booth_data")
 ]
