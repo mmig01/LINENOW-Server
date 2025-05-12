@@ -79,7 +79,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         booth = get_object_or_404(Booth, booth_id=booth_id)
-        waiting_num = booth.current_watiting_num + 1
+        waiting_num = booth.current_waiting_num + 1
 
         # 중복 대기 방지 (선택)
         existing_waiting = Waiting.objects.filter(user=user, booth=booth, waiting_status="waiting").first()
@@ -100,7 +100,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
             waiting_status="waiting",
         )
 
-        booth.current_watiting_num = waiting_num
+        booth.current_waiting_num = waiting_num
         booth.save()
 
         try:
