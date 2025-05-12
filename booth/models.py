@@ -31,7 +31,7 @@ class Booth(models.Model):
     booth_longitude = models.CharField(max_length=255, verbose_name="부스 위치 경도")
     operating_status = models.CharField(max_length=100, choices=STATUS_CHOICES, verbose_name="부스 운영 상태")
     current_waiting_num = models.IntegerField(verbose_name="최신 대기 번호")
-
+    is_restart = models.BooleanField(default=False, verbose_name="재시작 여부")
     def __str__(self):
         return self.booth_name
     
