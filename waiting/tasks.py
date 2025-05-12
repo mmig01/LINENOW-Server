@@ -4,6 +4,7 @@ import logging
 from .models import Waiting
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from utils.sendmessages import sendsms
 
 @app.task()
 def mark_waiting_as_time_over(waiting_id):
@@ -16,6 +17,22 @@ def mark_waiting_as_time_over(waiting_id):
             customer_user.save()
 
             waiting.save()
+
+            if waiting:
+                phone = waiting.user.user_phone.replace("-", "")
+                message = f"[{waiting.booth.booth_name}] 입장 시간이 초과되었습니다."
+                
+                try:
+                    response = sendsms(phone, message)
+
+                    if response.data['code'] == 200:
+                        print(f"입장 시간 초과 문자 발송 성공: {response.data['message']}")
+                    else:  # 문자 발송 실패
+                        print(f"문자 발송 실패: {response.data['message']}")
+
+                except Exception as e:
+                    print(f"문자 발송 오류: {str(e)}")
+
 
             waiting_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='waiting').count()
             entering_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entering').count()
