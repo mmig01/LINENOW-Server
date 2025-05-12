@@ -405,7 +405,10 @@ class WaitingViewSet(viewsets.ModelViewSet):
         waiting.save()
 
         booth_thumbnail = BoothImage.objects.filter(booth=waiting.booth.booth_id).first()
-        booth_thumbnail_url = booth_thumbnail.booth_image.url if booth_thumbnail and booth_thumbnail.booth_image else None
+        booth_thumbnail_url = None
+
+        if booth_thumbnail and booth_thumbnail.booth_image:
+            booth_thumbnail_url = request.build_absolute_uri(booth_thumbnail.booth_image.url)
         
         waiting_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='waiting').count()
         entering_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entering').count()
@@ -504,7 +507,10 @@ class WaitingViewSet(viewsets.ModelViewSet):
         waiting.save()
 
         booth_thumbnail = BoothImage.objects.filter(booth=waiting.booth.booth_id).first()
-        booth_thumbnail_url = booth_thumbnail.booth_image.url if booth_thumbnail and booth_thumbnail.booth_image else None
+        booth_thumbnail_url = None
+
+        if booth_thumbnail and booth_thumbnail.booth_image:
+            booth_thumbnail_url = request.build_absolute_uri(booth_thumbnail.booth_image.url)
 
         waiting_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='waiting').count()
         entering_team_cnt = Waiting.objects.filter(booth=waiting.booth, waiting_status='entering').count()
@@ -544,8 +550,11 @@ class WaitingViewSet(viewsets.ModelViewSet):
 
             for w in entering_waitings:
                 booth_thumbnail = BoothImage.objects.filter(booth=w.booth.booth_id).first()
-                booth_thumbnail_url = booth_thumbnail.booth_image.url if booth_thumbnail and booth_thumbnail.booth_image else None
+                booth_thumbnail_url = None
 
+                if booth_thumbnail and booth_thumbnail.booth_image:
+                    booth_thumbnail_url = request.build_absolute_uri(booth_thumbnail.booth_image.url)
+                
                 entering_waitings_data.append({
                     'waiting_id': w.waiting_id,
                     'waiting_num': w.waiting_num,
