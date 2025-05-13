@@ -216,7 +216,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
 
             if waiting:
                 phone = waiting.user.user_phone.replace("-", "")
-                message = f"[{booth.booth_name}] 대기 신청이 완료되었습니다. 대기 번호: {waiting.waiting_num}"
+                message = "[라인나우]\n대기가 등록되었어요\n추후 입장 확정 문자를 꼭 확인해 주세요"
 
                 try:
                     # 문자 발송 함수 호출 (sendsms 사용)
@@ -242,7 +242,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
 
                     if not target_waiting.notified_at:
                         phone = target_waiting.user.user_phone.replace("-", "")
-                        message = f"[{booth.booth_name}] 앞에 3팀 남았습니다! 곧 입장 준비해주세요 :)"
+                        message = "[라인나우]\n내 앞으로 3팀이 남았어요\n입장 순서가 다가오니 준비해주세요"
 
                         # 문자 발송 함수 호출 (sendsms 사용)
                         response = sendsms(phone, message)
@@ -259,7 +259,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
             enter_waiting = get_object_or_404(Waiting, waiting_id=waiting_id)
             if enter_waiting:
                 phone = enter_waiting.user.user_phone.replace("-", "")
-                message = f"[{booth.booth_name}] 대기가 호출되었습니다. 10분 내에 입장해주세요!"
+                message = f"[라인나우]\n지금 입장하실 차례입니다!\n{booth.booth_name} 부스로 이동해 주세요.\n\n입장 가능 시간은 10분이에요.\n제한 시간 10분 내 입장하지 않으면 전체 대기가 취소돼요.\n\n부스 입장을 원하지 않으신다면,\n반드시 서비스에 접속하여 입장을 취소해주세요.\nhttps://linenow.co.kr\n\n※ ‘입장 취소’ 진행 없이 입장하지 않으실 경우\n전체 부스의 대기가 자동 취소돼요.\n또한 노쇼 3회 누적 시, 금일 라인나우 이용이 제한되실 수 있어요."
 
                 try:
                     # 문자 발송 함수 호출 (sendsms 사용)
@@ -279,7 +279,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
 
             if admin_cancel_waiting:
                 phone = admin_cancel_waiting.user.user_phone.replace("-", "")
-                message = f"[{booth.booth_name}] 부스에서 대기를 취소하였습니다."
+                message = "[대기취소]\n대기 등록한 부스의 사정으로 인해, 대기가 취소되었어요"
 
                 try:
                     # 문자 발송 함수 호출 (sendsms 사용)
@@ -360,6 +360,10 @@ class WaitingViewSet(viewsets.ModelViewSet):
                     'data': {
                         'waiting_id': waiting.waiting_id,
                         'waiting_status': waiting.waiting_status,
+                        'user_info': {
+                            'user_name': user.user_name,  # request.user 기준
+                            'user_phone': user.user_phone,  # 필요에 따라 수정
+                        },
                         'booth_info': {
                             'waiting_team_cnt': waiting_team_cnt,
                             'entering_team_cnt': entering_team_cnt,
@@ -679,6 +683,12 @@ class WaitingViewSet(viewsets.ModelViewSet):
                     'data': {
                         'waiting_id': waiting.waiting_id,
                         'waiting_status': waiting.waiting_status,
+                        'booth_info': {
+                            'waiting_team_cnt': waiting_team_cnt,
+                            'entering_team_cnt': entering_team_cnt,
+                            'entered_team_cnt': entered_team_cnt,
+                            'canceled_team_cnt': canceled_team_cnt
+                        }
                     }
                 }
             )
@@ -766,6 +776,10 @@ class WaitingViewSet(viewsets.ModelViewSet):
                         'data': {
                             'waiting_id': cancel_waiting.waiting_id,
                             'waiting_status': cancel_waiting.waiting_status,
+                            'user_info': {
+                                'user_name': user.user_name,  # request.user 기준
+                                'user_phone': user.user_phone,  # 필요에 따라 수정
+                            },
                             'booth_info': {
                                 'waiting_team_cnt': waiting_team_cnt,
                                 'entering_team_cnt': entering_team_cnt,
@@ -910,6 +924,10 @@ class WaitingViewSet(viewsets.ModelViewSet):
                         'data': {
                             'waiting_id': cancel_waiting.waiting_id,
                             'waiting_status': cancel_waiting.waiting_status,
+                            'user_info': {
+                                'user_name': user.user_name,  # request.user 기준
+                                'user_phone': user.user_phone,  # 필요에 따라 수정
+                            },
                             'booth_info': {
                                 'waiting_team_cnt': waiting_team_cnt,
                                 'entering_team_cnt': entering_team_cnt,
@@ -1053,6 +1071,10 @@ class WaitingViewSet(viewsets.ModelViewSet):
                         'data': {
                             'waiting_id': cancel_waiting.waiting_id,
                             'waiting_status': cancel_waiting.waiting_status,
+                            'user_info': {
+                                'user_name': user.user_name,  # request.user 기준
+                                'user_phone': user.user_phone,  # 필요에 따라 수정
+                            },
                             'booth_info': {
                                 'waiting_team_cnt': waiting_team_cnt,
                                 'entering_team_cnt': entering_team_cnt,
