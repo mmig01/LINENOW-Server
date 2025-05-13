@@ -27,6 +27,39 @@ class ManagerViewSet(viewsets.ViewSet):
       "manager_code": "abcd1234"
     }
     """
+    def get_booth_queryset(self, request, statuses):
+        if not request.user or not request.user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "인증이 필요합니다.",
+                "code": 401,
+                "data": [{"detail": "유효한 access 토큰이 필요합니다."}]
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not request.user.is_manager:
+            return custom_response(
+                data={'detail': "관리자 유저가 아닙니다."},
+                message='권한이 없습니다.',
+                code=403,
+                success=False
+            )
+
+        try:
+            booth = request.user.manager_user.booth
+            queryset = Waiting.objects.filter(booth=booth, waiting_status__in=statuses).order_by('created_at')
+            serializer = ManagerWaitingListSerializer(queryset, many=True)
+            return custom_response(
+                serializer.data,
+                message='관리자 부스 대기 조회 성공',
+                code=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return custom_response(
+                data={'detail': str(e)},
+                message='관리자 부스 대기 조회 실패',
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                success=False
+            )
      # 회원가입
     @action(detail=False, methods=['post'], url_path='registration')
     def sign_up(self, request):
@@ -311,6 +344,74 @@ class ManagerViewSet(viewsets.ViewSet):
                 code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 success=False
             )
+
+    # 대기중인 대기 조회
+    @action(detail=False, methods=['get'], url_path='booth/waiting')
+    def get_waiting_waiting(self, request):
+        return self.get_booth_queryset(request, ["waiting"])
+
+    # 입장중인 대기 조회
+    @action(detail=False, methods=['get'], url_path='booth/entering')
+    def get_entering_booth(self, request):
+        return self.get_booth_queryset(request, ["entering"])
+
+    # 입장완료 대기 조회
+    @action(detail=False, methods=['get'], url_path='booth/entered')
+    def get_entered_waiting(self, request):
+        return self.get_booth_queryset(request, ["entered"])
+
+    # 입장취소 대기 조회
+    @action(detail=False, methods=['get'], url_path='booth/canceled')
+    def get_canceled_waiting(self, request):
+        return self.get_booth_queryset(request, ["canceled", "time_over"])
+        
+    # 대기 상태 수 조회
+    @action(detail=False, methods=['get'], url_path='booth/status-count')
+    def get_waiting_count(self, request):
+        # 로그인 확인
+        if not request.user or not request.user.is_authenticated:
+            return Response({
+                "status": "error",
+                "message": "인증이 필요합니다.",
+                "code": 401,
+                "data": [
+                    {"detail": "유효한 access 토큰이 필요합니다."}
+                ]
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        # 관리자 여부 확인
+        if not request.user.is_manager:
+            return custom_response(
+                data={'detail': "관리자 유저가 아닙니다."},
+                message='권한이 없습니다.',
+                code=403,
+                success=False
+            )
+        
+        try:
+            booth = request.user.manager_user.booth
+            waiting_team_cnt = Waiting.objects.filter(booth=booth, waiting_status='waiting').count()
+            entering_team_cnt = Waiting.objects.filter(booth=booth, waiting_status='entering').count()
+            entered_team_cnt = Waiting.objects.filter(booth=booth, waiting_status='entered').count()
+            canceled_team_cnt = (Waiting.objects.filter(booth=booth, waiting_status='canceled').count() + 
+                                Waiting.objects.filter(booth=booth, waiting_status='time_over').count())
+            return custom_response(
+                data={
+                    'waiting_team_cnt': waiting_team_cnt,
+                    'entering_team_cnt': entering_team_cnt,
+                    'entered_team_cnt': entered_team_cnt,
+                    'canceled_team_cnt': canceled_team_cnt
+                },
+                message='관리자 부스 대기 조회 성공',
+                code=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return custom_response(
+                data={'detail': str(e)},
+                message='관리자 부스 대기 조회 실패',
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                success=False
+            )
+
 # # 부스 웨이팅 조회
 # class BoothWaitingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
 #     serializer_class = ManagerWaitingListSerializer
