@@ -1181,7 +1181,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
             }
         }, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['get'], url_path='my-waited')
+    @action(detail=False, methods=['get'], url_path='my-waiting/finished')
     def my_waited(self, request):
         user = request.user
         if not user.is_authenticated:
