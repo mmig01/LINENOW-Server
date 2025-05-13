@@ -14,10 +14,11 @@ class BoothImageSerializer(serializers.ModelSerializer):
 
 class BoothListSerializer(serializers.ModelSerializer):
     booth_thumbnail = serializers.SerializerMethodField()
+    total_waiting_teams = serializers.SerializerMethodField() # 전체 대기 팀
 
     class Meta:
         model = Booth
-        fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'operating_status', 'booth_thumbnail']
+        fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'operating_status', 'booth_thumbnail', 'total_waiting_teams']
 
     def get_booth_thumbnail(self, obj):
         # 상대 경로
@@ -33,14 +34,19 @@ class BoothListSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(booth_thumbnail.booth_image.url)
         return ''
     
+    def get_total_waiting_teams(self, obj):
+        return Waiting.objects.filter(
+            booth=obj, 
+            waiting_status__in=['waiting', 'entering']
+        ).count()
+    
 class BoothWaitingListSerializer(serializers.ModelSerializer):
     waiting_id = serializers.SerializerMethodField()
-    total_waiting_teams = serializers.SerializerMethodField() # 전체 대기 팀
     waiting_status = serializers.SerializerMethodField() # 현재 대기 상태
 
     class Meta:
         model = Booth
-        fields = ['booth_id', 'waiting_id', 'total_waiting_teams', 'waiting_status']
+        fields = ['booth_id', 'waiting_id', 'waiting_status']
 
     def get_waiting_id(self, obj):
         request = self.context.get('request')
@@ -49,12 +55,6 @@ class BoothWaitingListSerializer(serializers.ModelSerializer):
             if waiting:
                 return waiting.waiting_id
         return None
-
-    def get_total_waiting_teams(self, obj):
-        return Waiting.objects.filter(
-            booth=obj, 
-            waiting_status__in=['waiting', 'entering']
-        ).count()
 
     # 여러 번 대기를 걸었을 때 가장 최근의 status를 반영
     def get_waiting_status(self, obj):
@@ -68,21 +68,27 @@ class BoothWaitingListSerializer(serializers.ModelSerializer):
 class BoothDetailSerializer(serializers.ModelSerializer):
     booth_menu_info = BoothMenuSerializer(many=True, source='booth_menus')
     booth_image_info = BoothImageSerializer(source='booth_images', many=True)
+    total_waiting_teams = serializers.SerializerMethodField() # 전체 대기 팀
 
     class Meta:
         model = Booth
-        fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'booth_latitude', 'booth_longitude', 'booth_notice', 'operating_status', 'booth_start_time', 'booth_menu_info', 'booth_image_info']
+        fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'booth_latitude', 'booth_longitude', 'booth_notice', 'operating_status', 'booth_start_time', 'total_waiting_teams', 'booth_menu_info', 'booth_image_info']
+
+    def get_total_waiting_teams(self, obj):
+        return Waiting.objects.filter(
+            booth=obj, 
+            waiting_status__in=['waiting', 'entering']
+        ).count()
 
 class BoothWaitingDetailSerializer(serializers.ModelSerializer):
     waiting_id = serializers.SerializerMethodField()
-    total_waiting_teams = serializers.SerializerMethodField() # 전체 대기 팀
     waiting_status = serializers.SerializerMethodField() # 현재 대기 상태
     waiting_team_ahead = serializers.SerializerMethodField() # 현재 대기 상태
     confirmed_at = serializers.SerializerMethodField() # 입장 승인 시간
 
     class Meta:
         model = Booth
-        fields = ['booth_id', 'waiting_id', 'total_waiting_teams', 'waiting_status', 'waiting_team_ahead', 'confirmed_at']
+        fields = ['booth_id', 'waiting_id', 'waiting_status', 'waiting_team_ahead', 'confirmed_at']
 
     def get_waiting_id(self, obj):
         request = self.context.get('request')
@@ -91,12 +97,6 @@ class BoothWaitingDetailSerializer(serializers.ModelSerializer):
             if waiting:
                 return waiting.waiting_id
         return None
-
-    def get_total_waiting_teams(self, obj):
-        return Waiting.objects.filter(
-            booth=obj, 
-            waiting_status__in=['waiting', 'entering']
-        ).count()
 
     # 여러 번 대기를 걸었을 때 가장 최근의 status를 반영
     def get_waiting_status(self, obj):
