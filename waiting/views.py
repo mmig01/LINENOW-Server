@@ -95,7 +95,11 @@ class WaitingViewSet(viewsets.ModelViewSet):
         waiting_num = booth.current_waiting_num + 1
 
         # 중복 대기 방지 (선택)
-        existing_waiting = Waiting.objects.filter(user=user, booth=booth, waiting_status="waiting").first()
+        existing_waiting = Waiting.objects.filter(
+            user=user,
+            booth=booth,
+            waiting_status__in=["waiting", "entering"]
+        ).exists()
         if existing_waiting:
             return Response({
                 "status": "error",
