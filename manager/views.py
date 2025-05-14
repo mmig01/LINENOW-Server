@@ -66,9 +66,10 @@ class ManagerViewSet(viewsets.ViewSet):
         serializer = ManagerSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                user = serializer.save()
                 booth = request.data.get('booth')
                 manager_booth = get_object_or_404(Booth, booth_name=booth)
+                
+                user = serializer.save()
                 manager_user = Manager.objects.create(user=user, booth=manager_booth)
                 manager_user.user.is_manager = True
                 user.save()
@@ -143,7 +144,7 @@ class ManagerViewSet(viewsets.ViewSet):
                 "message": "로그인 실패",
                 "code": 401,
                 "data": [
-                    {"detail": "비밀번호가 올바르지 않습니다."}
+                    {"detail": "관리자 코드가 올바르지 않습니다."}
                 ]
             }, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -161,6 +162,7 @@ class ManagerViewSet(viewsets.ViewSet):
                         "manager_name": manager_user.user.user_name,
                         "booth_id": manager_user.booth.booth_id,
                         "operating_status": manager_user.booth.operating_status,
+                        "is_restart": manager_user.booth.is_restart
                     }
                 }
             ]
