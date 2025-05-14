@@ -64,7 +64,20 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "status": "error",
                 "message": "노쇼를 3회 이상하여 대기가 불가능합니다.",
                 "code": status.HTTP_400_BAD_REQUEST,
-                "data": None
+                "data": {
+                    "message": "no_show user"
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        user_waiting_cnt = Waiting.objects.filter(user=user, waiting_status="waiting").count()
+        if user_waiting_cnt >= 3:
+            return Response({
+                "status": "error",
+                "message": "현재 대기중인 대기가 3개 이상입니다.",
+                "code": status.HTTP_400_BAD_REQUEST,
+                "data": {
+                    "message": "waiting over"
+                }
             }, status=status.HTTP_400_BAD_REQUEST)
         
         booth_id = request.data.get('booth_id')
