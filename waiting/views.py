@@ -721,13 +721,13 @@ class WaitingViewSet(viewsets.ModelViewSet):
 
             try:
                 channel_layer = get_channel_layer()
-                admin_group_name = f"booth_{waiting.booth.booth_id}_admin"
+                admin_group_name = f"booth_{w.booth.booth_id}_admin"
                 async_to_sync(channel_layer.group_send)(
                     admin_group_name,
                     {
                         'type': 'send_to_admin',
                         'status': 'success',
-                        'message': '입장이 완료되었습니다.',
+                        'message': '사용자가 대기를 취소했습니다.',
                         'code': 200,
                         'data': {
                             'waiting_id': w.waiting_id,
