@@ -99,7 +99,7 @@ class WaitingViewSet(viewsets.ModelViewSet):
             user=user,
             booth=booth,
             waiting_status__in=["waiting", "entering"]
-        ).first()
+        ).exists()
         if existing_waiting:
             return Response({
                 "status": "error",
