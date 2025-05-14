@@ -708,6 +708,45 @@ class WaitingViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print("WebSocket send error (cancel):", str(e))
 
+        entered_user_waitings = Waiting.objects.filter(user = waiting.user, waiting_status="waiting")
+        for w in entered_user_waitings:
+            w.waiting_status = "canceled"
+            w.save()
+
+            waiting_team_cnt = Waiting.objects.filter(booth=w.booth, waiting_status='waiting').count()
+            entering_team_cnt = Waiting.objects.filter(booth=w.booth, waiting_status='entering').count()
+            entered_team_cnt = Waiting.objects.filter(booth=w.booth, waiting_status='entered').count()
+            canceled_team_cnt = (Waiting.objects.filter(booth=w.booth, waiting_status='canceled').count() + 
+                                Waiting.objects.filter(booth=w.booth, waiting_status='time_over').count())
+
+            try:
+                channel_layer = get_channel_layer()
+                admin_group_name = f"booth_{waiting.booth.booth_id}_admin"
+                async_to_sync(channel_layer.group_send)(
+                    admin_group_name,
+                    {
+                        'type': 'send_to_admin',
+                        'status': 'success',
+                        'message': '입장이 완료되었습니다.',
+                        'code': 200,
+                        'data': {
+                            'waiting_id': w.waiting_id,
+                            'waiting_status': w.waiting_status,
+                            'booth_info': {
+                                'waiting_team_cnt': waiting_team_cnt,
+                                'entering_team_cnt': entering_team_cnt,
+                                'entered_team_cnt': entered_team_cnt,
+                                'canceled_team_cnt': canceled_team_cnt
+                            }
+                        }
+                    }
+                )
+            except Exception as e:
+                print("WebSocket send error (cancel):", str(e))
+
+            sms_status_2 = "입장 준비해주세요."
+            self.sms_sending(w.booth, sms_status_2)
+
         # serializer = WaitingDetailSerializer(waiting)
         # print(serializer.data)
         return custom_response(
