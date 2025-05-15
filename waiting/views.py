@@ -9,7 +9,7 @@ from booth.models import Booth, BoothImage
 from accounts.models import User
 from utils.exceptions import ResourceNotFound, CustomException
 from utils.responses import custom_response
-from django.db.models import Q
+from django.db.models import Q, Case, When, Value, IntegerField
 from utils.sendmessages import sendsms
 from django.utils import timezone
 from manager.models import Manager
@@ -1177,10 +1177,20 @@ class WaitingViewSet(viewsets.ModelViewSet):
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # 대기 중인 내역 가져오기
-        queryset = Waiting.objects.filter(user=user, waiting_status__in=["waiting", "entering"])
+        # 대기 중인 내역 가져오기(입장중, 대기중 순서로 정렬)
+        queryset = Waiting.objects.filter(
+            user=user,
+            waiting_status__in=["waiting", "entering"]
+        ).annotate(
+            status_order=Case(
+                When(waiting_status='entering', then=Value(0)),
+                When(waiting_status='waiting', then=Value(1)),
+                default=Value(2),
+                output_field=IntegerField(),
+            )
+        ).order_by('status_order', 'created_at')
         serializer = WaitingListSerializer(queryset, many=True, context={'request': request})
-
+        
         if not queryset.exists():
             return Response({
                 "status": "error",
