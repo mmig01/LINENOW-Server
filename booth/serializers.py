@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Booth, BoothMenu, BoothImage
 from waiting.models import Waiting
+from accounts.models import CustomerUser
 
 class BoothMenuSerializer(serializers.ModelSerializer):
     class Meta:
@@ -85,10 +86,12 @@ class BoothWaitingDetailSerializer(serializers.ModelSerializer):
     waiting_status = serializers.SerializerMethodField() # 현재 대기 상태
     waiting_team_ahead = serializers.SerializerMethodField() # 현재 대기 상태
     confirmed_at = serializers.SerializerMethodField() # 입장 승인 시간
+    user_waiting_cnt = serializers.SerializerMethodField() # 대기중인 대기 개수
+    user_is_black = serializers.SerializerMethodField() # 대기 요청할 사용자 black list 여부 맞으면 True
 
     class Meta:
         model = Booth
-        fields = ['booth_id', 'waiting_id', 'waiting_status', 'waiting_team_ahead', 'confirmed_at']
+        fields = ['booth_id', 'waiting_id', 'waiting_status', 'waiting_team_ahead', 'confirmed_at', 'user_waiting_cnt', 'user_is_black']
 
     def get_waiting_id(self, obj):
         request = self.context.get('request')
@@ -124,6 +127,25 @@ class BoothWaitingDetailSerializer(serializers.ModelSerializer):
             waiting = Waiting.objects.filter(user=request.user, booth=obj).order_by('-created_at').first()
             if waiting:
                 return waiting.confirmed_at
+        return None
+    
+    def get_user_waiting_cnt(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            waiting = Waiting.objects.filter(user=request.user, waiting_status__in=["waiting", "entering"])
+            if waiting:
+                return waiting.count()
+        return None
+    
+    def get_user_is_black(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            user_info = CustomerUser.objects.filter(user=request.user).first()
+            if user_info:
+                if user_info.no_show_num >= 3:
+                    return True
+                else:
+                    return False
         return None
 
 class BoothLocationSerializer(serializers.ModelSerializer):
