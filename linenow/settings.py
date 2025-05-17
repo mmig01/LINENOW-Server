@@ -281,7 +281,7 @@ CORS_ALLOWED_ORIGINS = [
 
     # 프론트엔드 도메인 또는 IP주소
     'https://linewnow-test-admin.netlify.app/',
-    'https://linewnow-test-service.netlify.app/'
+    'https://linewnow-test-service.netlify.app/',
     
     # 백엔드 도메인 또는 IP주소
     'https://linenow-backend.store',
