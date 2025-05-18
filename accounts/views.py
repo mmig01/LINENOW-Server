@@ -273,6 +273,15 @@ class SMSViewSet(viewsets.ViewSet):
                 "data": [{"detail": "전화번호가 필요합니다."}]
             }, status=status.HTTP_400_BAD_REQUEST)
         
+        # User 에 user_phone 이 존재하는지 확인
+        if User.objects.filter(user_phone=user_phone).exists() == True:
+            return Response({
+                "status": "error",
+                "message": "문자인증 실패",
+                "code": 400,
+                "data": [{"detail": "이미 가입된 전화번호입니다."}]
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         # SMSAuthenticate 객체 생성 또는 업데이트
         try:
             sms_token_key = os.getenv("SMS_TOKEN_KEY")
@@ -319,45 +328,3 @@ class SMSViewSet(viewsets.ViewSet):
             "message": "문자인증 코드가 전송되었습니다.",
             "code": 200,
         }, status=status.HTTP_200_OK)
-
-    '''
-    아래 코드는 사용하지 않음.
-    '''
-    # @action(detail=False, methods=['post'], url_path='verify')
-    # def verify_sms(self, request):
-    #     user_phone = request.data.get('user_phone')
-    #     sms_code = request.data.get('sms_code')
-    #     if not user_phone or not sms_code:
-    #         return Response({
-    #             "status": "error",
-    #             "message": "문자인증 실패",
-    #             "code": 400,
-    #             "data": [{"detail": "전화번호와 인증 코드가 필요합니다."}]
-    #         }, status=status.HTTP_400_BAD_REQUEST)
-        
-    #     try:
-    #         # 해당 전화번호의 가장 최근 인증 기록을 가져옵니다.
-    #         sms_obj = SMSAuthenticate.objects.filter(user_phone=user_phone).latest('created_at')
-    #     except SMSAuthenticate.DoesNotExist:
-    #         return Response({
-    #             "status": "error",
-    #             "message": "문자인증 실패",
-    #             "code": 404,
-    #             "data": [{"detail": "해당 전화번호의 인증 기록이 존재하지 않습니다."}]
-    #         }, status=status.HTTP_404_NOT_FOUND)
-        
-    #     # 인증 코드가 일치하고 만료되지 않았는지 검사 (여기서는 5분 유효기간)
-    #     if sms_obj.sms_code == sms_code and not sms_obj.is_expired():
-    #         return Response({
-    #             "status": "success",
-    #             "message": "문자인증 성공",
-    #             "code": 200,
-    #             "data": [{"detail": "인증이 완료되었습니다."}]
-    #         }, status=status.HTTP_200_OK)
-    #     else:
-    #         return Response({
-    #             "status": "error",
-    #             "message": "문자인증 실패",
-    #             "code": 400,
-    #             "data": [{"detail": "문자인증 코드가 올바르지 않거나 만료되었습니다."}]
-    #         }, status=status.HTTP_400_BAD_REQUEST)
