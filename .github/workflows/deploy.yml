@@ -134,6 +134,17 @@ jobs:
               ${{ secrets.DOCKER_USERNAME }}/linenow:latest \
               celery -A linenow worker --loglevel=info --concurrency=4
 
+            echo "🔧 Restarting Celery Beat"
+            docker rm -f linenow_celery_beat || true
+            docker run -d \
+              --name linenow_celery_beat \
+              --network linenow-network \
+              -e REDIS_HOST=redis-server \
+              -e CELERY_BROKER_URL=redis://redis-server:6379/0 \
+              -e CELERY_RESULT_BACKEND=redis://redis-server:6379/0 \
+              ${{ secrets.DOCKER_USERNAME }}/linenow:latest \
+              celery -A linenow beat -l info
+
 
             # ──────────────────────────────────────────────────────────
             # 5) Nginx upstream 포트 교체 & reload
