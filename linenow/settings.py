@@ -186,6 +186,7 @@ if IS_DEPLOY == 'True':
     CELERY_RESULT_SERIALIZER = 'json'
     CELERY_TASK_SERIALIZER = 'json'
     CELERY_TIMEZONE = 'Asia/Seoul'
+    CELERY_ENABLE_UTC=False
     
 else:
     CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
@@ -194,6 +195,7 @@ else:
     CELERY_RESULT_SERIALIZER = 'json'
     CELERY_TASK_SERIALIZER = 'json'
     CELERY_TIMEZONE = 'Asia/Seoul'
+    CELERY_ENABLE_UTC=False
 
 # 데이터베이스 설정
 if IS_DEPLOY == 'True':
