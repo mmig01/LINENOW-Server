@@ -63,6 +63,8 @@ jobs:
             docker run -d \
               --name pgbouncer \
               --network linenow-network \
+              -e DATABASES_HOST=${{ secrets.DB_HOST }} \
+              -e DATABASES_PORT=${{ secrets.DB_PORT }} \
               -p 6432:6432 \
               -v /home/ubuntu/pgbouncer:/etc/pgbouncer \
               pgbouncer/pgbouncer
