@@ -63,12 +63,14 @@ jobs:
             docker run -d \
               --name pgbouncer \
               --network linenow-network \
+              --user root \
               -e DATABASES_HOST=${{ secrets.DB_HOST }} \
               -e DATABASES_PORT=${{ secrets.DB_PORT }} \
               -p 6432:6432 \
               -v /home/ubuntu/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini \
               -v /home/ubuntu/userlist.txt:/etc/pgbouncer/userlist.txt \
-              pgbouncer/pgbouncer
+              pgbouncer/pgbouncer \
+              pgbouncer -u postgres /etc/pgbouncer/pgbouncer.ini
             # ──────────────────────────────────────────────────────────
             # 1) 현재 Active 포트 확인 (upstream.conf에서)
             # ──────────────────────────────────────────────────────────
