@@ -118,6 +118,12 @@ class UserViewSet(viewsets.ViewSet):
         user = get_object_or_404(User, user_phone=phone)
         customer_user = get_object_or_404(CustomerUser, user=user)
         
+        # ───────────────────────────────────────────────
+        # 로그인 시 기존에 발급된 모든 리프레시 토큰을 블랙리스트 처리
+        tokens = OutstandingToken.objects.filter(user=customer_user.user)
+        for token in tokens:
+            BlacklistedToken.objects.get_or_create(token=token)
+        # ───────────────────────────────────────────────
         refresh = RefreshToken.for_user(customer_user.user)
         data = {
             "status": "success",
