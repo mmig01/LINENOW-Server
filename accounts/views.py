@@ -39,7 +39,7 @@ class UserViewSet(viewsets.ViewSet):
                 return Response({
                     "status": "error",
                     "message": "문자인증 실패",
-                    "code": 400,
+                    "code": 401,
                     "data": [{"detail": "해당 전화번호의 인증 기록이 존재하지 않습니다."}]
                 }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -48,7 +48,7 @@ class UserViewSet(viewsets.ViewSet):
                 return Response({
                     "status": "error",
                     "message": "문자인증 실패",
-                    "code": 400,
+                    "code": 401,
                     "data": [{"detail": "문자인증코드가 올바르지 않거나 만료되었습니다."}]
                 }, status=status.HTTP_400_BAD_REQUEST)
 
