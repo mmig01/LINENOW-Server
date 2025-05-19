@@ -23,6 +23,9 @@ ARG REDIS_HOST
 # ★ 3-1. 런타임 바인딩 포트 (기본 8000)
 ARG PORT=8000
 ENV PORT=${PORT}
+# 동시 접속을 처리할 워커 수 (필요에 따라 조정)
+ARG WORKERS=4
+ENV WORKERS=${WORKERS}
 
 # 4. 환경 변수를 Docker 컨테이너 내부에 설정
 ENV SECRET_KEY=${SECRET_KEY}
@@ -48,10 +51,12 @@ COPY . /
 
 # 6. 패키지 설치
 RUN pip install --upgrade pip && pip install -r requirements.txt
+# ASGI 최적화용 서버 및 라이브러리 설치
+RUN pip install gunicorn uvicorn uvloop httptools
 
 # 7. Django 정적 파일 수집 및 마이그레이션 (빌드 시)
 RUN python manage.py collectstatic --noinput
 RUN python manage.py migrate
 
-# 8. Gunicorn 실행 (Django 서버 실행)
-CMD ["sh", "-c", "daphne -b 0.0.0.0 -p ${PORT} linenow.asgi:application"]
+# 8. 파일 디스크립터 한계를 높인 후 Gunicorn+Uvicorn 워커로 실행
+CMD ["sh", "-c", "ulimit -n 10000 && gunicorn linenow.asgi:application -k uvicorn.workers.UvicornWorker -w ${WORKERS} --bind 0.0.0.0:${PORT} --backlog 2048"]

@@ -166,6 +166,13 @@ CHANNEL_LAYERS = {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
             "hosts": [(os.environ.get('REDIS_HOST', 'localhost'), 6379)],
+            ## 최대 접속자 수를 늘리기 위해 설정
+            # 최대 버퍼 용량 및 만료 시간 설정
+            "capacity": 10000,
+            "expiry": 60,
+            "group_expiry": 10,
+            # Redis 커넥션 풀 크기 조정
+            "connection_pool_kwargs": {"max_connections": 1000},
         },
     },
 }
