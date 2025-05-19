@@ -213,8 +213,13 @@ if IS_DEPLOY == 'True':
             'NAME': env('DB_NAME'),
             'USER': env('DB_USER'),
             'PASSWORD': env('DB_PASSWORD'),
-            'HOST': env('DB_HOST'),
-            'PORT': env('DB_PORT'),
+            'HOST': os.getenv('PGBOUNCER_HOST', env('DB_HOST')),
+            'PORT': os.getenv('PGBOUNCER_PORT', env('DB_PORT')),
+            'CONN_MAX_AGE': int(env('CONN_MAX_AGE', default=60)),      # persistent connections for up to 60s
+            'ATOMIC_REQUESTS': True,                                  # wrap each request in a transaction
+            'OPTIONS': {
+                'connect_timeout': 10,                                # DB connection timeout in seconds
+            },
         }
     }
 else:
