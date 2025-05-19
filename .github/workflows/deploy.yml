@@ -57,6 +57,17 @@ jobs:
           script: |
             set -e  # 에러 발생 시 즉시 중단
             # ──────────────────────────────────────────────────────────
+            # 0) PgBouncer 컨테이너 실행 (존재하면 다시 생성)
+            # ──────────────────────────────────────────────────────────
+            docker rm -f pgbouncer || true
+            docker run -d \
+              --name pgbouncer \
+              --network linenow-network \
+              -p 6432:6432 \
+              -v /home/ubuntu/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini \
+              -v /home/ubuntu/userlist.txt:/etc/pgbouncer/userlist.txt \
+              pgbouncer/pgbouncer
+            # ──────────────────────────────────────────────────────────
             # 1) 현재 Active 포트 확인 (upstream.conf에서)
             # ──────────────────────────────────────────────────────────
             ACTIVE_PORT=$(sudo grep -Po '127\.0\.0\.1:\K\d+' /etc/nginx/sites-available/default)
@@ -101,6 +112,7 @@ jobs:
               --network linenow-network \
               -p ${INACTIVE_PORT}:${INACTIVE_PORT} \
               -e REDIS_HOST=redis-server \
+              -e DB_HOST=pgbouncer \
               -e PORT=${INACTIVE_PORT} \
               -e CELERY_BROKER_URL=redis://redis-server:6379/0 \
               -e CELERY_RESULT_BACKEND=redis://redis-server:6379/0 \
