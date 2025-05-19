@@ -105,49 +105,39 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='login')
     def sign_in(self, request):
         phone = request.data.get('user_phone')
-        password = request.data.get('user_password')
     
-        if not phone or not password:
+        if not phone:
             return Response({
                 "status": "error",
                 "message": "로그인 실패",
                 "code": 400,
                 "data": [
-                    {"detail": "전화번호와 비밀번호를 모두 입력해주세요."}
+                    {"detail": "전화번호를 입력해주세요."}
                 ]
             }, status=status.HTTP_400_BAD_REQUEST)
         user = get_object_or_404(User, user_phone=phone)
         customer_user = get_object_or_404(CustomerUser, user=user)
-        if customer_user.user.check_password(password):
-            refresh = RefreshToken.for_user(customer_user.user)
-            data = {
-                "status": "success",
-                "message": "로그인 성공",
-                "code": 200,
-                "data": [
-                    {
-                        "access": str(refresh.access_token),
-                        "refresh": str(refresh),
-                        "user": {
-                            "user_id": customer_user.id,
-                            "user_name": customer_user.user.user_name,
-                            "user_phone": customer_user.user.user_phone,
-                            "no_show_num": customer_user.no_show_num
-                        }
+        
+        refresh = RefreshToken.for_user(customer_user.user)
+        data = {
+            "status": "success",
+            "message": "로그인 성공",
+            "code": 200,
+            "data": [
+                {
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                    "user": {
+                        "user_id": customer_user.id,
+                        "user_name": customer_user.user.user_name,
+                        "user_phone": customer_user.user.user_phone,
+                        "no_show_num": customer_user.no_show_num
                     }
-                ]
-            }
-            return Response(data, status=status.HTTP_200_OK)
-        else:
-            return Response({
-                "status": "error",
-                "message": "로그인 실패",
-                "code": 401,
-                "data": [
-                    {"detail": "비밀번호가 올바르지 않습니다."}
-                ]
-            }, status=status.HTTP_401_UNAUTHORIZED)
-    
+                }
+            ]
+        }
+        return Response(data, status=status.HTTP_200_OK)
+       
     @action(detail=False, methods=['post'], url_path='logout')
     def logout(self, request):
         # access 토큰을 통한 인증이 필요
@@ -328,3 +318,6 @@ class SMSViewSet(viewsets.ViewSet):
             "message": "문자인증 코드가 전송되었습니다.",
             "code": 200,
         }, status=status.HTTP_200_OK)
+    
+
+    
