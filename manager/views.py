@@ -219,6 +219,7 @@ class ManagerViewSet(viewsets.ViewSet):
             # 취소된 대기는 뒤로 정렬
             queryset = Waiting.objects.filter(booth=booth).annotate(
                 canceled_waiting=Case(
+                    When(waiting_status__in=['entered'], then=Value(2)),
                     When(waiting_status__in=['canceled', 'time_over'], then=Value(1)),
                     default=Value(0),
                     output_field=IntegerField(),
