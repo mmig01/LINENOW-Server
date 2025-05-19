@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Case, When, Value, IntegerField
 
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework.decorators import action
 # from waiting.tasks import check_ready_to_confirm
 
@@ -148,6 +148,12 @@ class ManagerViewSet(viewsets.ViewSet):
                 ]
             }, status=status.HTTP_401_UNAUTHORIZED)
 
+        # ───────────────────────────────────────────────
+        # 로그인 시 기존에 발급된 모든 리프레시 토큰을 블랙리스트 처리
+        tokens = OutstandingToken.objects.filter(user=manager_user.user)
+        for token in tokens:
+            BlacklistedToken.objects.get_or_create(token=token)
+        # ───────────────────────────────────────────────
         refresh = RefreshToken.for_user(manager_user.user)
         data = {
             "status": "success",
