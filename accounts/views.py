@@ -21,7 +21,7 @@ class UserViewSet(viewsets.ViewSet):
     - POST   /user/login/        -> 로그인
     - DELETE /user/{pk}/withdraw  -> 회원탈퇴
     """
-
+    
     # 회원가입
     @action(detail=False, methods=['post'], url_path='registration')
     def sign_up(self, request):
@@ -29,10 +29,33 @@ class UserViewSet(viewsets.ViewSet):
         if serializer.is_valid():
             validated_data = serializer.validated_data
             user_phone = validated_data.get('user_phone')
-        
+            provided_sms_code = validated_data.get('sms_code')
+            privided_sms_code_hash = hashlib.sha256(provided_sms_code.encode('utf-8')).hexdigest()
+            # SMS 인증 코드 유효성 검사
+            try:
+                # 해당 전화번호의 최신 인증 기록을 가져옵니다.
+                sms_instance = SMSAuthenticate.objects.filter(user_phone=user_phone).latest('created_at')
+            except SMSAuthenticate.DoesNotExist:
+                return Response({
+                    "status": "error",
+                    "message": "문자인증 실패",
+                    "code": 401,
+                    "data": [{"detail": "해당 전화번호의 인증 기록이 존재하지 않습니다."}]
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # 인증 코드 일치와 유효 기간(예: 1분 이내) 검사
+            if sms_instance.sms_code != privided_sms_code_hash or sms_instance.is_expired():
+                return Response({
+                    "status": "error",
+                    "message": "문자인증 실패",
+                    "code": 401,
+                    "data": [{"detail": "문자인증코드가 올바르지 않거나 만료되었습니다."}]
+                }, status=status.HTTP_400_BAD_REQUEST)
+
             try:
                 # 인증 통과 시 회원가입 진행
                 user = serializer.save()
+                
             except Exception as e:
                 return Response({
                     "status": "error",
@@ -78,76 +101,23 @@ class UserViewSet(viewsets.ViewSet):
                 ]
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-     # 전화번호와 문자인증 코드를 이용한 인증
-    @action(detail=False, methods=['post'], url_path='authenticate')
-    def authenticate(self, request):
+    # 로그인
+    @action(detail=False, methods=['post'], url_path='login')
+    def sign_in(self, request):
         phone = request.data.get('user_phone')
     
         if not phone:
             return Response({
                 "status": "error",
-                "message": "인증 실패",
+                "message": "로그인 실패",
                 "code": 400,
                 "data": [
                     {"detail": "전화번호를 입력해주세요."}
                 ]
             }, status=status.HTTP_400_BAD_REQUEST)
-        
-        provided_sms_code = request.data.get('sms_code')
-
-        if not provided_sms_code:
-            return Response({
-                "status": "error",
-                "message": "인증 실패",
-                "code": 400,
-                "data": [
-                    {"detail": "문자인증코드를 입력해주세요."}
-                ]
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        privided_sms_code_hash = hashlib.sha256(provided_sms_code.encode('utf-8')).hexdigest()
-        # SMS 인증 코드 유효성 검사
-        try:
-            # 해당 전화번호의 최신 인증 기록을 가져옵니다.
-            sms_instance = SMSAuthenticate.objects.filter(user_phone=phone).latest('created_at')
-        except SMSAuthenticate.DoesNotExist:
-            return Response({
-                "status": "error",
-                "message": "문자인증 실패",
-                "code": 401,
-                "data": [{"detail": "해당 전화번호의 인증 기록이 존재하지 않습니다."}]
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # 인증 코드 일치와 유효 기간(예: 1분 이내) 검사
-        if sms_instance.sms_code != privided_sms_code_hash or sms_instance.is_expired():
-            return Response({
-                "status": "error",
-                "message": "문자인증 실패",
-                "code": 401,
-                "data": [{"detail": "문자인증코드가 올바르지 않거나 만료되었습니다."}]
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # 전화번호로 사용자 찾기
-        try:
-            user = User.objects.get(user_phone=phone)
-        except User.DoesNotExist:
-            return Response({
-                "status": "error",
-                "message": "로그인 실패",
-                "code": 401,
-                "data": [
-                    {"detail": "회원가입이 필요합니다.", "is_signup": False}
-                ]
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
+        user = get_object_or_404(User, user_phone=phone)
         customer_user = get_object_or_404(CustomerUser, user=user)
         
-        # ───────────────────────────────────────────────
-        # 로그인 시 기존에 발급된 모든 리프레시 토큰을 블랙리스트 처리
-        tokens = OutstandingToken.objects.filter(user=customer_user.user)
-        for token in tokens:
-            BlacklistedToken.objects.get_or_create(token=token)
-        # ───────────────────────────────────────────────
         refresh = RefreshToken.for_user(customer_user.user)
         data = {
             "status": "success",
@@ -291,6 +261,15 @@ class SMSViewSet(viewsets.ViewSet):
                 "message": "문자인증 실패",
                 "code": 400,
                 "data": [{"detail": "전화번호가 필요합니다."}]
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # User 에 user_phone 이 존재하는지 확인
+        if User.objects.filter(user_phone=user_phone).exists() == True:
+            return Response({
+                "status": "error",
+                "message": "문자인증 실패",
+                "code": 400,
+                "data": [{"detail": "이미 가입된 전화번호입니다."}]
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # SMSAuthenticate 객체 생성 또는 업데이트
