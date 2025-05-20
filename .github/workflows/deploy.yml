@@ -101,6 +101,9 @@ jobs:
               --network linenow-network \
               -p ${INACTIVE_PORT}:${INACTIVE_PORT} \
               -e REDIS_HOST=redis-server \
+              -e PORT=${INACTIVE_PORT} \
+              -e CELERY_BROKER_URL=redis://redis-server:6379/0 \
+              -e CELERY_RESULT_BACKEND=redis://redis-server:6379/0 \
               ${{ secrets.DOCKER_USERNAME }}/linenow:latest
 
             # media 파일을 컨테이너 내부로 복사
