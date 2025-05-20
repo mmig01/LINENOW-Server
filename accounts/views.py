@@ -105,7 +105,8 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='login')
     def sign_in(self, request):
         phone = request.data.get('user_phone')
-    
+
+        # 이전 버전 코드
         if not phone:
             return Response({
                 "status": "error",
