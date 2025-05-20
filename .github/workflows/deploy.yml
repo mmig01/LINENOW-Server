@@ -67,7 +67,8 @@ jobs:
               -e DATABASES_PORT=${{ secrets.DB_PORT }} \
               -p 6432:6432 \
               -v /home/ubuntu/pgbouncer:/etc/pgbouncer \
-              pgbouncer/pgbouncer
+              pgbouncer/pgbouncer \
+              pgbouncer -u pgbouncer /etc/pgbouncer/pgbouncer.ini
             # ──────────────────────────────────────────────────────────
             # 1) 현재 Active 포트 확인 (upstream.conf에서)
             # ──────────────────────────────────────────────────────────
