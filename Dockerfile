@@ -54,7 +54,6 @@ COPY . /
 
 # 6. 패키지 설치
 RUN pip install --upgrade pip && pip install -r requirements.txt
-# ASGI 최적화용 서버 및 라이브러리 설치
-RUN pip install gunicorn uvicorn uvloop httptools
 
-CMD ["sh", "-c", "ulimit -n 10000 && python manage.py migrate && python manage.py collectstatic --noinput && gunicorn linenow.asgi:application -k uvicorn.workers.UvicornWorker -w ${WORKERS} --bind 0.0.0.0:${PORT} --backlog 2048"]
+# 8. Gunicorn 실행 (Django 서버 실행)
+CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p ${PORT} linenow.asgi:application"]
