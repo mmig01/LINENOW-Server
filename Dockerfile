@@ -57,9 +57,4 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 # ASGI 최적화용 서버 및 라이브러리 설치
 RUN pip install gunicorn uvicorn uvloop httptools
 
-# 7. Django 정적 파일 수집 및 마이그레이션 (빌드 시)
-RUN python manage.py collectstatic --noinput
-RUN python manage.py migrate
-
-# 8. 파일 디스크립터 한계를 높인 후 Gunicorn+Uvicorn 워커로 실행
-CMD ["sh", "-c", "ulimit -n 10000 && gunicorn linenow.asgi:application -k uvicorn.workers.UvicornWorker -w ${WORKERS} --bind 0.0.0.0:${PORT} --backlog 2048"]
+CMD ["sh", "-c", "ulimit -n 10000 && python manage.py migrate && python manage.py collectstatic --noinput && gunicorn linenow.asgi:application -k uvicorn.workers.UvicornWorker -w ${WORKERS} --bind 0.0.0.0:${PORT} --backlog 2048"]
