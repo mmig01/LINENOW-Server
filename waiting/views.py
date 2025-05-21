@@ -277,12 +277,13 @@ class WaitingViewSet(viewsets.ModelViewSet):
             if enter_waiting:
                 phone = enter_waiting.user.user_phone.replace("-", "")
 
+                # 이 부분 manager_contact 추가하면 수정해야함
                 # try catch 문으로 변경
                 manager_contact = None
-                try:
-                    manager_contact = booth.manager_contact
-                except Exception as e:
-                    manager_contact = None
+                # try:
+                #     manager_contact = booth.manager_contact
+                # except Exception as e:
+                #     manager_contact = None
 
 
                 if manager_contact != None:
