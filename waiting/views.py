@@ -276,8 +276,11 @@ class WaitingViewSet(viewsets.ModelViewSet):
             enter_waiting = get_object_or_404(Waiting, waiting_id=waiting_id)
             if enter_waiting:
                 phone = enter_waiting.user.user_phone.replace("-", "")
-                message = f"[라인나우]\n지금 입장하실 차례입니다!\n{booth.booth_name} 부스로 이동해 주세요.\n\n입장 가능 시간은 10분이에요.\n제한 시간 10분 내 입장하지 않으면 전체 대기가 취소돼요.\n\n부스 입장을 원하지 않으신다면,\n반드시 서비스에 접속하여 입장을 취소해주세요.\nhttps://linewnow-test-service.netlify.app/\n\n※ ‘입장 취소’ 진행 없이 입장하지 않으실 경우\n전체 부스의 대기가 자동 취소돼요.\n또한 노쇼 3회 누적 시, 금일 라인나우 이용이 제한되실 수 있어요."
-
+                if booth.manager_contact != None:
+                    message = f"[라인나우]\n지금 입장하실 차례입니다!\n{booth.booth_name} 부스로 이동해 주세요.\n\n입장 가능 시간은 10분이에요.\n제한 시간 10분 내 입장하지 않으면 전체 대기가 취소돼요.\n\n부스 입장을 원하지 않으신다면,\n반드시 서비스에 접속하여 입장을 취소해주세요.\nhttps://linewnow-test-service.netlify.app/\n\n부스 전화번호: {booth.manager_contact}\n\n※ ‘입장 취소’ 진행 없이 입장하지 않으실 경우\n전체 부스의 대기가 자동 취소돼요.\n또한 노쇼 3회 누적 시, 금일 라인나우 이용이 제한되실 수 있어요."
+                else:
+                    message = f"[라인나우]\n지금 입장하실 차례입니다!\n{booth.booth_name} 부스로 이동해 주세요.\n\n입장 가능 시간은 10분이에요.\n제한 시간 10분 내 입장하지 않으면 전체 대기가 취소돼요.\n\n부스 입장을 원하지 않으신다면,\n반드시 서비스에 접속하여 입장을 취소해주세요.\nhttps://linewnow-test-service.netlify.app/\n\n※ ‘입장 취소’ 진행 없이 입장하지 않으실 경우\n전체 부스의 대기가 자동 취소돼요.\n또한 노쇼 3회 누적 시, 금일 라인나우 이용이 제한되실 수 있어요."
+                
                 try:
                     # 문자 발송 함수 호출 (sendsms 사용)
                     response = sendsms(phone, message)
