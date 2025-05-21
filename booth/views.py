@@ -22,7 +22,7 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
     - GET   /booths/location        -> 부스 위치 목록
     - GET   /booths/{pk}            -> 부스 상세
     """
-
+    
     def get_serializer_class(self):
         if self.action == 'list':
             return BoothListSerializer 
