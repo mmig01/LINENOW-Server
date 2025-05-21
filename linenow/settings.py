@@ -208,7 +208,7 @@ if IS_DEPLOY == 'True':
             'PASSWORD': env('DB_PASSWORD'),
             'HOST': os.getenv('PGBOUNCER_HOST', env('DB_HOST')),
             'PORT': os.getenv('PGBOUNCER_PORT', env('DB_PORT')),
-            'CONN_MAX_AGE': int(env('CONN_MAX_AGE', default=60)),      # persistent connections for up to 60s
+            'CONN_MAX_AGE': int(env('CONN_MAX_AGE', default=0)),       # disable persistent DB connections when using PgBouncer
             'ATOMIC_REQUESTS': True,                                  # wrap each request in a transaction
             'OPTIONS': {
                 'connect_timeout': 10,                                # DB connection timeout in seconds
