@@ -70,7 +70,6 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.kakao',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
     
     'celery',
     'django_celery_beat',
@@ -123,8 +122,8 @@ REST_USE_JWT = True
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=3),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
     'TOKEN_USER_CLASS': "accounts.models.User",
 }
 
@@ -208,7 +207,7 @@ if IS_DEPLOY == 'True':
             'PASSWORD': env('DB_PASSWORD'),
             'HOST': os.getenv('PGBOUNCER_HOST', env('DB_HOST')),
             'PORT': os.getenv('PGBOUNCER_PORT', env('DB_PORT')),
-            'CONN_MAX_AGE': int(env('CONN_MAX_AGE', default=60)),      # persistent connections for up to 60s
+            'CONN_MAX_AGE': int(env('CONN_MAX_AGE', default=0)),       # disable persistent DB connections when using PgBouncer
             'ATOMIC_REQUESTS': True,                                  # wrap each request in a transaction
             'OPTIONS': {
                 'connect_timeout': 10,                                # DB connection timeout in seconds

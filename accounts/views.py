@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+
 
 from .models import SMSAuthenticate, User, CustomerUser
 from .serializers import UserSerializer
@@ -142,13 +142,6 @@ class UserViewSet(viewsets.ViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         customer_user = get_object_or_404(CustomerUser, user=user)
-        
-        # ───────────────────────────────────────────────
-        # 로그인 시 기존에 발급된 모든 리프레시 토큰을 블랙리스트 처리
-        tokens = OutstandingToken.objects.filter(user=customer_user.user)
-        for token in tokens:
-            BlacklistedToken.objects.get_or_create(token=token)
-        # ───────────────────────────────────────────────
         refresh = RefreshToken.for_user(customer_user.user)
         data = {
             "status": "success",
@@ -206,10 +199,6 @@ class UserViewSet(viewsets.ViewSet):
                 ]
             }, status=status.HTTP_401_UNAUTHORIZED)
         
-        # 블랙리스트 처리
-        tokens = OutstandingToken.objects.filter(user=request.user)
-        for token in tokens:
-            BlacklistedToken.objects.get_or_create(token=token)
         # access 토큰에 해당하는 사용자 삭제
         request.user.delete()
         return Response({
