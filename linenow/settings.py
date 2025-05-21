@@ -70,7 +70,6 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.kakao',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
     
     'celery',
     'django_celery_beat',
@@ -123,8 +122,8 @@ REST_USE_JWT = True
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=3),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
     'TOKEN_USER_CLASS': "accounts.models.User",
 }
 
