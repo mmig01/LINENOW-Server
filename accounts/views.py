@@ -266,6 +266,30 @@ class UserViewSet(viewsets.ViewSet):
                 ]
             }, status=status.HTTP_200_OK)
         
+    @action(detail=False, methods=['get'], url_path='user-count')
+    def user_count(self, request):
+        try:
+            user_count = User.objects.count()
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": "유저 수 조회 실패",
+                "code": 500,
+                "data": [
+                    {"detail": str(e)}
+                ]
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response({
+            "status": "success",
+            "message": "유저 수 조회 성공",
+            "code": 200,
+            "data": {
+                "user_count": user_count
+            }
+        }, status=status.HTTP_200_OK)
+       
+        
 class SMSViewSet(viewsets.ViewSet):
     """
     문자인증 관련 API 뷰
