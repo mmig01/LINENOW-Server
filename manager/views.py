@@ -3,11 +3,10 @@ from rest_framework import mixins, viewsets
 from .models import *
 from .serializers import *
 from utils.responses import custom_response
-
+from itertools import chain
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.db.models import Case, When, Value, IntegerField
-
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action
 # from waiting.tasks import check_ready_to_confirm
@@ -215,15 +214,30 @@ class ManagerViewSet(viewsets.ViewSet):
 
         try:
             booth = request.user.manager_user.booth
-            # 취소된 대기는 뒤로 정렬
-            queryset = Waiting.objects.filter(booth=booth).annotate(
-                canceled_waiting=Case(
-                    When(waiting_status__in=['entered'], then=Value(2)),
+            
+            # waiting_status가 기타인 경우: 오래된 순 정렬
+            other_qs = Waiting.objects.filter(
+                booth=booth
+            ).exclude(
+                waiting_status__in=['entered', 'canceled', 'time_over']
+            ).annotate(
+                status_priority=Value(0, output_field=IntegerField())
+            ).order_by('created_at')
+
+            # waiting_status가 canceled, time_over, entered: 최신 순 정렬
+            status_qs = Waiting.objects.filter(
+                booth=booth,
+                waiting_status__in=['canceled', 'time_over', 'entered']
+            ).annotate(
+                status_priority=Case(
                     When(waiting_status__in=['canceled', 'time_over'], then=Value(1)),
-                    default=Value(0),
-                    output_field=IntegerField(),
+                    When(waiting_status='entered', then=Value(2)),
+                    output_field=IntegerField()
                 )
-            ).order_by('canceled_waiting', 'created_at')
+            ).order_by('status_priority', '-created_at')
+
+            # 병합
+            queryset = list(chain(other_qs, status_qs))
 
             serializer = ManagerWaitingListSerializer(queryset, many=True)
             return custom_response(
