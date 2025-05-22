@@ -32,6 +32,8 @@ class Booth(models.Model):
     operating_status = models.CharField(max_length=100, choices=STATUS_CHOICES, verbose_name="부스 운영 상태")
     current_waiting_num = models.IntegerField(verbose_name="최신 대기 번호")
     is_restart = models.BooleanField(default=False, verbose_name="재시작 여부")
+    is_GDGbooth = models.BooleanField(default=False, verbose_name="GDG부스 여부")
+    GDG_id = models.IntegerField(null=True, blank=True, verbose_name="GDG부스 id")
     manager_contact = models.CharField(max_length=20, null=True, blank=True, verbose_name="관리자 연락처")
 
     def __str__(self):

@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django.db.models import Case, When, Value, IntegerField, Count, Q
 from rest_framework.filters import OrderingFilter
 from .models import Booth
-from .serializers import BoothListSerializer, BoothDetailSerializer, BoothWaitingListSerializer, BoothWaitingDetailSerializer, BoothLocationSerializer
+from .serializers import *
 from rest_framework import viewsets, mixins
 from utils.mixins import CustomResponseMixin
 from utils.responses import custom_response
@@ -30,7 +30,7 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
     
     def get_queryset(self):
         # '운영중 - 대기중지 - 운영전 - 운영종료' + 가나다 순서로 정렬
-        queryset = Booth.objects.annotate(
+        queryset = Booth.objects.all().annotate(
             operating_status_order=Case(
                 When(operating_status='operating', then=Value(1)),
                 When(operating_status='paused', then=Value(2)),
@@ -44,7 +44,7 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
     # 부스 목록 조회
     def list(self, request, *args, **kwargs):
         try:
-            queryset = self.get_queryset()
+            queryset = self.get_queryset().filter(is_GDGbooth=False)
             serializer = self.get_serializer(queryset, many=True)
             return custom_response(
                 data=serializer.data,
@@ -80,7 +80,7 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
     @action(detail=False, methods=['get'], url_path='location')
     def get_booth_location(self, request):
         try:
-            booths = Booth.objects.all()
+            booths = Booth.objects.filter(is_GDGbooth=False)
             serializer = BoothLocationSerializer(booths, many=True)
             return custom_response(
                 serializer.data, 
@@ -99,12 +99,23 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
     def retrieve(self, request, *args, **kwargs):
         try:
             booth = self.get_object()
-            serializer = self.get_serializer(booth)
-            return custom_response(
-                data=serializer.data, 
-                message="부스 상세 조회 성공", 
-                code=status.HTTP_200_OK
-            )
+
+            if booth.is_GDGbooth == False:
+                serializer = self.get_serializer(booth)
+                return custom_response(
+                    data=serializer.data, 
+                    message="부스 상세 조회 성공", 
+                    code=status.HTTP_200_OK
+                )
+            
+            else:
+                return custom_response(
+                    data={'detail': 'GDG부스 입니다.'}, 
+                    message='부스 상세 조회 실패', 
+                    code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                    success=False
+                )   
+
         except Exception as e:
             return custom_response(
                 data={'detail': str(e)}, 
@@ -126,7 +137,7 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
     
     def get_queryset(self):
         # '운영중 - 대기중지 - 운영전 - 운영종료' + 가나다 순서로 정렬
-        queryset = Booth.objects.annotate(
+        queryset = Booth.objects.all().annotate(
             operating_status_order=Case(
                 When(operating_status='operating', then=Value(1)),
                 When(operating_status='paused', then=Value(2)),
@@ -147,7 +158,7 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         try:
-            queryset = self.get_queryset()
+            queryset = self.get_queryset().filter(is_GDGbooth=False)
             serializer = self.get_serializer(queryset, many=True)
             return custom_response(
                 data=serializer.data,
@@ -173,12 +184,23 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
             }, status=status.HTTP_401_UNAUTHORIZED)
         try:
             booth = self.get_object()
-            serializer = self.get_serializer(booth)
-            return custom_response(
-                data=serializer.data, 
-                message='부스 대기 상세 조회 성공', 
-                code=status.HTTP_200_OK
-            )
+            
+            if booth.is_GDGbooth == False:
+                serializer = self.get_serializer(booth)
+                return custom_response(
+                    data=serializer.data, 
+                    message="부스 대기 상세 조회 성공", 
+                    code=status.HTTP_200_OK
+                )
+            
+            else:
+                return custom_response(
+                    data={'detail': 'GDG부스 입니다.'}, 
+                    message='부스 대기 상세 조회 실패', 
+                    code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                    success=False
+                ) 
+
         except Exception as e:
             return custom_response(
                 data={'detail': str(e)}, 
@@ -265,3 +287,66 @@ class BoothDataView(APIView):
             code=status.HTTP_200_OK,
             success=True
         )
+
+class GDGBoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.ListModelMixin):
+    """
+    - GET   /gdg-booths                 -> GDG부스 목록(가나다순)
+    - GET   /gdg-booths/{pk}            -> GDG부스 상세
+    """
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return GDGBoothListSerializer 
+        return GDGBoothDetailSerializer 
+    
+    def get_queryset(self):
+        queryset = Booth.objects.all()
+        return queryset.order_by('booth_name')
+
+    # 부스 목록 조회
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.get_queryset().filter(is_GDGbooth=True)
+            serializer = self.get_serializer(queryset, many=True)
+            return custom_response(
+                data=serializer.data,
+                message='GDG부스 목록 조회 성공',
+                code=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return custom_response(
+                data={'detail': str(e)},
+                message='GDG부스 목록 조회 실패',
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                success=False
+            )
+
+    #부스 상세 조회
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            booth = self.get_object()
+            serializer = self.get_serializer(booth)
+            
+            if booth.is_GDGbooth == True:
+                serializer = self.get_serializer(booth)
+                return custom_response(
+                    data=serializer.data, 
+                    message="GDG부스 대기 상세 조회 성공", 
+                    code=status.HTTP_200_OK
+                )
+            
+            else:
+                return custom_response(
+                    data={'detail': 'GDG부스가 아닙니다.'}, 
+                    message='GDG부스 대기 상세 조회 실패', 
+                    code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                    success=False
+                ) 
+
+        except Exception as e:
+            return custom_response(
+                data={'detail': str(e)}, 
+                message='GDG부스 상세 조회 실패', 
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                success=False
+            )
