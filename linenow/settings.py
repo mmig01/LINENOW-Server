@@ -293,6 +293,10 @@ CORS_ALLOWED_ORIGINS = [
     # 백엔드 도메인 또는 IP주소
     'https://linenow-backend.store',
     SSODAA_BASE_URL,
+
+    # 프론트 실ㅔ 배포 주소
+    'https://linenow.co.kr',
+    'https://linenow-manager.co.kr/login'
 ]
 
 
