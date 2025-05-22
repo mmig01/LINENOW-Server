@@ -298,3 +298,5 @@ CORS_ALLOWED_ORIGINS = [
     'https://linenow.co.kr',
     'https://linenow-manager.co.kr'
 ]
+
+
