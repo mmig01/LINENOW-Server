@@ -294,9 +294,9 @@ CORS_ALLOWED_ORIGINS = [
     'https://linenow-backend.store',
     SSODAA_BASE_URL,
 
-    # 프론트 실ㅔ 배포 주소
+    # 프론트 실제 배포 주소
     'https://linenow.co.kr',
-    'https://linenow-manager.co.kr/login'
+    'https://linenow-manager.co.kr'
 ]
 
 
