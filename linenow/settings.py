@@ -197,12 +197,31 @@ else:
     CELERY_ENABLE_UTC=False
 
 # 데이터베이스 설정
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+if IS_DEPLOY == 'True':
+    # 배포 환경: PostgreSQL 사용
+    DATABASES = {
+        'default': {
+            'ENGINE': env('DB_ENGINE'),
+            'NAME': env('DB_NAME'),
+            'USER': env('DB_USER'),
+            'PASSWORD': env('DB_PASSWORD'),
+            'HOST': os.getenv('PGBOUNCER_HOST', env('DB_HOST')),
+            'PORT': os.getenv('PGBOUNCER_PORT', env('DB_PORT')),
+            'CONN_MAX_AGE': int(env('CONN_MAX_AGE', default=0)),       # disable persistent DB connections when using PgBouncer
+            'ATOMIC_REQUESTS': True,                                  # wrap each request in a transaction
+            'OPTIONS': {
+                'connect_timeout': 10,                                # DB connection timeout in seconds
+            },
+        }
     }
-}
+else:
+    # 개발 환경: SQLite3 사용 (기본값)
+    DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+            }
+        }
 
 
 # Password validation
@@ -279,6 +298,3 @@ CORS_ALLOWED_ORIGINS = [
     'https://linenow.co.kr',
     'https://linenow-manager.co.kr'
 ]
-
-
-
