@@ -40,7 +40,28 @@ class BoothListSerializer(serializers.ModelSerializer):
             booth=obj, 
             waiting_status__in=['waiting', 'entering']
         ).count()
-    
+
+class GDGBoothListSerializer(serializers.ModelSerializer):
+    booth_thumbnail = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Booth
+        fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'booth_thumbnail', 'GDG_id']
+
+    def get_booth_thumbnail(self, obj):
+        # 상대 경로
+        # booth_thumbnail = obj.BoothImages.first()
+        # if booth_thumbnail:
+        #     return booth_thumbnail.image.url
+        # return ''
+        
+        # 절대 경로
+        request = self.context.get('request')
+        booth_thumbnail = obj.booth_images.first()
+        if booth_thumbnail and request:
+            return request.build_absolute_uri(booth_thumbnail.booth_image.url)
+        return ''
+
 class BoothWaitingListSerializer(serializers.ModelSerializer):
     waiting_id = serializers.SerializerMethodField()
     waiting_status = serializers.SerializerMethodField() # 현재 대기 상태
@@ -80,6 +101,13 @@ class BoothDetailSerializer(serializers.ModelSerializer):
             booth=obj, 
             waiting_status__in=['waiting', 'entering']
         ).count()
+
+class GDGBoothDetailSerializer(serializers.ModelSerializer):
+    booth_image_info = BoothImageSerializer(source='booth_images', many=True)
+
+    class Meta:
+        model = Booth
+        fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'booth_notice', 'booth_start_time', 'booth_image_info', 'GDG_id']
 
 class BoothWaitingDetailSerializer(serializers.ModelSerializer):
     waiting_id = serializers.SerializerMethodField()
