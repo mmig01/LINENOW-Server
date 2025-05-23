@@ -330,7 +330,7 @@ class SMSViewSet(viewsets.ViewSet):
     
             payload = {
                 'token_key': sms_token_key,
-                'msg_type': 'SMS',
+                'msg_type': 'sms',
                 'dest_phone': user_phone,
                 'send_phone': send_phone,
                 'msg_body': f"라인나우 인증코드: {sms_code}",
