@@ -92,8 +92,6 @@ jobs:
               --name $INACTIVE_NAME \
               --network linenow-network \
               -v /home/ubuntu/media:/media \
-              # Mount host media directory into container at /media (read-write). 
-              # This ensures container writes go to host and host files are not deleted or overwritten.
               -p ${INACTIVE_PORT}:${INACTIVE_PORT} \
               -e REDIS_HOST=redis-server \
               -e PORT=${INACTIVE_PORT} \
