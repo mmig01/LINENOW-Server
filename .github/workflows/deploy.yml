@@ -75,16 +75,6 @@ jobs:
 
             # ──────────────────────────────────────────────────────────
           
-            echo "기존 media 파일 외부로 복사"
-
-            # 컨테이너 내에 /media 디렉토리가 있는지 검사
-            if docker exec "$ACTIVE_NAME" test -d /media; then
-              echo "media 폴더가 존재합니다. 복사 중..."
-              docker cp "$ACTIVE_NAME":/media /home/ubuntu
-            else
-              echo "컨테이너 내에 media 폴더가 존재하지 않습니다."
-            fi
-
             # ──────────────────────────────────────────────────────────
             # 2) 이전에 대기 중이던 컨테이너 제거
             # ──────────────────────────────────────────────────────────
@@ -101,21 +91,15 @@ jobs:
             docker run -d \
               --name $INACTIVE_NAME \
               --network linenow-network \
+              -v /home/ubuntu/media:/media \
+              # Mount host media directory into container at /media (read-write). 
+              # This ensures container writes go to host and host files are not deleted or overwritten.
               -p ${INACTIVE_PORT}:${INACTIVE_PORT} \
               -e REDIS_HOST=redis-server \
               -e PORT=${INACTIVE_PORT} \
               -e CELERY_BROKER_URL=redis://redis-server:6379/0 \
               -e CELERY_RESULT_BACKEND=redis://redis-server:6379/0 \
               ${{ secrets.DOCKER_USERNAME }}/linenow:latest
-
-            # media 파일을 컨테이너 내부로 복사
-            echo "ubuntu/media 폴더를 컨테이너 내부로 복사 중..."
-            if [ -d /home/ubuntu/media ]; then
-              echo "media 폴더가 존재합니다. 컨테이너 내부로 복사 중..."
-              docker cp /home/ubuntu/media "$INACTIVE_NAME":/
-            else
-              echo "외부에 media 폴더가 존재하지 않습니다."
-            fi
 
             # ──────────────────────────────────────────────────────────
             # 4) DB 마이그레이션
