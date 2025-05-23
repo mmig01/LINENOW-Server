@@ -68,5 +68,5 @@ class SMSAuthenticate(models.Model):
         인증 코드의 유효기간을 체크합니다. (예: 1분)
         """
         now = timezone.now()
-        expiration_time = self.created_at + timezone.timedelta(minutes=1)
+        expiration_time = self.created_at + timezone.timedelta(minutes=3)
         return now > expiration_time

@@ -307,6 +307,19 @@ class SMSViewSet(viewsets.ViewSet):
                 "data": [{"detail": "전화번호가 필요합니다."}]
             }, status=status.HTTP_400_BAD_REQUEST)
         
+        # Prevent requesting a new code within 1 minute of the last one
+        try:
+            last = SMSAuthenticate.objects.filter(user_phone=user_phone).latest('created_at')
+            if not last.is_expired():
+                return Response({
+                    "status": "error",
+                    "message": "문자인증 실패",
+                    "code": 429,
+                    "data": [{"detail": "인증 코드는 3분에 한 번만 요청할 수 있습니다."}]
+                }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        except SMSAuthenticate.DoesNotExist:
+            pass
+        
         # SMSAuthenticate 객체 생성 또는 업데이트
         try:
             sms_token_key = os.getenv("SMS_TOKEN_KEY")
