@@ -332,7 +332,7 @@ class SMSViewSet(viewsets.ViewSet):
                 return Response({
                     "status": "error",
                     "message": "차단되었습니다",
-                    "code": 429,
+                    "code": 500,
                     "data": [{"detail": "과도한 요청으로 인해 차단되었습니다."}]
                 }, status=status.HTTP_429_TOO_MANY_REQUESTS)
             
