@@ -317,6 +317,25 @@ class SMSViewSet(viewsets.ViewSet):
                     "code": 429,
                     "data": [{"detail": "인증 코드는 3분에 한 번만 요청할 수 있습니다."}]
                 }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+            
+            # 과도한 요청 방지 로직
+            # 마지막 인증 시각과 현재 시각의 차이를 계산
+            # 만약 마지막 인증 시각이 3분 이내라면 bad_sms_count 증가
+            # 만약 bad_sms_count가 10 이상이면 차단 처리
+            now = timezone.now()    
+            delta = (now - last.created_at).total_seconds()
+            if 3*60 < delta <= 3*60 + 5:
+                last.bad_sms_count += 1
+                last.save()
+
+            if last.bad_sms_count >= 10:
+                return Response({
+                    "status": "error",
+                    "message": "차단되었습니다",
+                    "code": 429,
+                    "data": [{"detail": "과도한 요청으로 인해 차단되었습니다."}]
+                }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+            
         except SMSAuthenticate.DoesNotExist:
             pass
         
