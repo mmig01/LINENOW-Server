@@ -3,6 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Case, When, Value, IntegerField, Count, Q
+from django.utils import timezone
 from rest_framework.filters import OrderingFilter
 from .models import Booth
 from .serializers import *
@@ -29,6 +30,7 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
         return BoothDetailSerializer 
     
     def get_queryset(self):
+        today = timezone.now().date()
         # '운영중 - 대기중지 - 운영전 - 운영종료' + 가나다 순서로 정렬
         queryset = Booth.objects.all().annotate(
             operating_status_order=Case(
@@ -38,7 +40,7 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
                 When(operating_status='finished', then=Value(4)),
                 output_field=IntegerField()
             )
-        )
+        ).filter(booth_start_time__date=today)  # 오늘 부스만
         return queryset.order_by('operating_status_order', 'booth_name')
 
     # 부스 목록 조회
@@ -165,6 +167,7 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
         return BoothWaitingDetailSerializer 
     
     def get_queryset(self):
+        today = timezone.now().date()
         # '운영중 - 대기중지 - 운영전 - 운영종료' + 가나다 순서로 정렬
         queryset = Booth.objects.all().annotate(
             operating_status_order=Case(
@@ -174,7 +177,7 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
                 When(operating_status='finished', then=Value(4)),
                 output_field=IntegerField()
             )
-        )
+        ).filter(booth_start_time__date=today)  # 오늘 부스만
         return queryset.order_by('operating_status_order', 'booth_name')
     
     # 부스 목록 - 대기 정보 조회
@@ -329,7 +332,8 @@ class GDGBoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retri
         return GDGBoothDetailSerializer 
     
     def get_queryset(self):
-        queryset = Booth.objects.all()
+        today = timezone.now().date()
+        queryset = Booth.objects.all().filter(booth_start_time__date=today)  # 오늘 부스만
         return queryset.order_by('booth_name')
 
     # 부스 목록 조회
