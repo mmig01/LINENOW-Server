@@ -88,7 +88,7 @@ class BoothWaitingListSerializer(serializers.ModelSerializer):
         return None
 
 class BoothDetailSerializer(serializers.ModelSerializer):
-    booth_menu_info = BoothMenuSerializer(many=True, source='booth_menus')
+    booth_menu_info = serializers.SerializerMethodField()
     booth_image_info = serializers.SerializerMethodField()
     total_waiting_teams = serializers.SerializerMethodField() # 전체 대기 팀
 
@@ -100,6 +100,11 @@ class BoothDetailSerializer(serializers.ModelSerializer):
         # Return images ordered by booth_image_id ascending
         images = obj.booth_images.all().order_by('booth_image_id')
         serializer = BoothImageSerializer(images, many=True, context=self.context)
+        return serializer.data
+
+    def get_booth_menu_info(self, obj):
+        menus = obj.booth_menus.all().order_by('menu_id')
+        serializer = BoothMenuSerializer(menus, many=True, context=self.context)
         return serializer.data
 
     def get_total_waiting_teams(self, obj):
