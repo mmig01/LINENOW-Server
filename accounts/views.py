@@ -210,7 +210,7 @@ class UserViewSet(viewsets.ViewSet):
             ]
         }, status=status.HTTP_200_OK)
         
-        # 모든 유저의 no_show_num 값을 0으로 초기화하는 액션
+    # 모든 유저의 no_show_num 값을 0으로 초기화하는 액션
     @action(detail=False, methods=['post'], url_path='reset-no-show')
     def reset_no_show_num(self, request):
         try:
@@ -386,5 +386,26 @@ class SMSViewSet(viewsets.ViewSet):
             "code": 200,
         }, status=status.HTTP_200_OK)
     
-
+    # 모든 유저의 bad_sms_count 값을 0으로 초기화하는 액션
+    @action(detail=False, methods=['post'], url_path='reset-bad-sms-count')
+    def reset_bad_sms_count(self, request):
+        try:
+            SMSAuthenticate.objects.all().update(bad_sms_count=0)
+            return Response({
+                "status": "success",
+                "message": "모든 유저의 bad_sms_count 값이 0으로 초기화되었습니다.",
+                "code": 200,
+                "data": [
+                    {"detail": "초기화 완료"}
+                ]
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": "초기화 실패",
+                "code": 500,
+                "data": [
+                    {"detail": str(e)}
+                ]
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
