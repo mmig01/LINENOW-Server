@@ -44,7 +44,32 @@ class ManagerViewSet(viewsets.ViewSet):
 
         try:
             booth = request.user.manager_user.booth
-            queryset = Waiting.objects.filter(booth=booth, waiting_status__in=statuses).order_by('created_at')
+            # waiting_status가 기타인 경우: 오래된 순 정렬
+            other_qs = Waiting.objects.filter(
+                booth=booth
+            ).exclude(
+                waiting_status__in=['entered', 'canceled', 'time_over']
+            ).annotate(
+                status_priority=Value(0, output_field=IntegerField())
+            ).order_by('created_at')
+
+            # waiting_status가 canceled, time_over, entered: 최신 순 정렬
+            status_qs = Waiting.objects.filter(
+                booth=booth,
+                waiting_status__in=['canceled', 'time_over', 'entered']
+            ).annotate(
+                status_priority=Case(
+                    When(waiting_status__in=['canceled', 'time_over'], then=Value(1)),
+                    When(waiting_status='entered', then=Value(2)),
+                    output_field=IntegerField()
+                )
+            ).order_by('status_priority', '-created_at')
+
+            # 병합
+            status_qs = status_qs.filter(waiting_status__in=statuses)
+            other_qs = other_qs.filter(waiting_status__in=statuses)
+            queryset = list(chain(other_qs, status_qs))
+
             serializer = ManagerWaitingListSerializer(queryset, many=True)
             return custom_response(
                 serializer.data,
