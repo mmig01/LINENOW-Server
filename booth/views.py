@@ -124,6 +124,26 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
                 success=False
             )
 
+    #부스 운영 마감
+    @action(detail=False, methods=['post'], url_path='finish-operating-booth')
+    def set_booth_finished(self, request):
+        try:
+            operating_booths = Booth.objects.filter(operating_status='operating')
+            count = operating_booths.update(operating_status='finished')
+            return custom_response(
+                    data={'detail': f'{count}개 부스의 운영을 마감하였습니다.'}, 
+                    message="부스 운영 마감 성공", 
+                    code=status.HTTP_200_OK
+                )
+        except Exception as e:
+            return custom_response(
+                data={'detail': str(e)}, 
+                message='부스 운영 마감 실패', 
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                success=False
+            )
+            
+
 class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.ListModelMixin):
     """
     - GET   /booths-waiting         -> 부스 목록(가나다순) - 대기 정보
