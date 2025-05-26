@@ -89,12 +89,18 @@ class BoothWaitingListSerializer(serializers.ModelSerializer):
 
 class BoothDetailSerializer(serializers.ModelSerializer):
     booth_menu_info = BoothMenuSerializer(many=True, source='booth_menus')
-    booth_image_info = BoothImageSerializer(source='booth_images', many=True)
+    booth_image_info = serializers.SerializerMethodField()
     total_waiting_teams = serializers.SerializerMethodField() # 전체 대기 팀
 
     class Meta:
         model = Booth
         fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'booth_latitude', 'booth_longitude', 'booth_notice', 'operating_status', 'booth_start_time', 'total_waiting_teams', 'booth_menu_info', 'booth_image_info']
+
+    def get_booth_image_info(self, obj):
+        # Return images ordered by booth_image_id ascending
+        images = obj.booth_images.all().order_by('booth_image_id')
+        serializer = BoothImageSerializer(images, many=True, context=self.context)
+        return serializer.data
 
     def get_total_waiting_teams(self, obj):
         return Waiting.objects.filter(
@@ -103,11 +109,16 @@ class BoothDetailSerializer(serializers.ModelSerializer):
         ).count()
 
 class GDGBoothDetailSerializer(serializers.ModelSerializer):
-    booth_image_info = BoothImageSerializer(source='booth_images', many=True)
+    booth_image_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Booth
         fields = ['booth_id', 'booth_name', 'booth_description', 'booth_location', 'booth_notice', 'booth_start_time', 'booth_image_info', 'GDG_id']
+
+    def get_booth_image_info(self, obj):
+        images = obj.booth_images.all().order_by('booth_image_id')
+        serializer = BoothImageSerializer(images, many=True, context=self.context)
+        return serializer.data
 
 class BoothWaitingDetailSerializer(serializers.ModelSerializer):
     waiting_id = serializers.SerializerMethodField()
