@@ -42,7 +42,7 @@ class Booth(models.Model):
 class BoothMenu(models.Model):
     menu_id = models.AutoField(primary_key=True)
     booth = models.ForeignKey(Booth, on_delete=models.CASCADE, related_name="booth_menus")
-    menu_name = models.CharField(max_length=100, verbose_name="메뉴 이름")
+    menu_name = models.TextField(verbose_name="메뉴 이름")
     menu_price = models.IntegerField(verbose_name="메뉴 가격")
 
     def __str__(self):
