@@ -125,23 +125,32 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
             )
 
     #부스 운영 마감
-    @action(detail=False, methods=['post'], url_path='finish-operating-booth')
+    @action(detail=False, methods=['post'], url_path='finish')
     def set_booth_finished(self, request):
-        try:
-            operating_booths = Booth.objects.filter(operating_status='operating')
-            count = operating_booths.update(operating_status='finished')
-            return custom_response(
-                    data={'detail': f'{count}개 부스의 운영을 마감하였습니다.'}, 
-                    message="부스 운영 마감 성공", 
-                    code=status.HTTP_200_OK
+        password = request.data.get('password')
+        if password == '219480linenow@since2024!':
+            try:
+                operating_booths = Booth.objects.filter(operating_status='operating')
+                count = operating_booths.update(operating_status='finished')
+                return custom_response(
+                        data={'detail': f'{count}개 부스의 운영을 마감하였습니다.'}, 
+                        message="부스 운영 마감 성공", 
+                        code=status.HTTP_200_OK
+                    )
+            except Exception as e:
+                return custom_response(
+                    data={'detail': str(e)}, 
+                    message='부스 운영 마감 실패', 
+                    code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                    success=False
                 )
-        except Exception as e:
+        else:
             return custom_response(
-                data={'detail': str(e)}, 
-                message='부스 운영 마감 실패', 
-                code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-                success=False
-            )
+                    data={'detail': '비밀번호가 틀립니다.'}, 
+                    message='부스 운영 마감 실패', 
+                    code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                    success=False
+                )
             
 
 class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.ListModelMixin):
