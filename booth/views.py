@@ -30,7 +30,6 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
         return BoothDetailSerializer 
     
     def get_queryset(self):
-        today = timezone.now().date()
         # '운영중 - 대기중지 - 운영전 - 운영종료' + 가나다 순서로 정렬
         queryset = Booth.objects.all().annotate(
             operating_status_order=Case(
@@ -40,13 +39,14 @@ class BoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retrieve
                 When(operating_status='finished', then=Value(4)),
                 output_field=IntegerField()
             )
-        ).filter(booth_start_time__date=today)  # 오늘 부스만
+        )
         return queryset.order_by('operating_status_order', 'booth_name')
 
     # 부스 목록 조회
     def list(self, request, *args, **kwargs):
         try:
-            queryset = self.get_queryset().filter(is_GDGbooth=False)
+            today = timezone.now().date()
+            queryset = self.get_queryset().filter(is_GDGbooth=False, booth_start_time__date=today)
             serializer = self.get_serializer(queryset, many=True)
             return custom_response(
                 data=serializer.data,
@@ -166,7 +166,6 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
         return BoothWaitingDetailSerializer 
     
     def get_queryset(self):
-        today = timezone.now().date()
         # '운영중 - 대기중지 - 운영전 - 운영종료' + 가나다 순서로 정렬
         queryset = Booth.objects.all().annotate(
             operating_status_order=Case(
@@ -176,11 +175,12 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
                 When(operating_status='finished', then=Value(4)),
                 output_field=IntegerField()
             )
-        ).filter(booth_start_time__date=today)  # 오늘 부스만
+        )
         return queryset.order_by('operating_status_order', 'booth_name')
     
     # 부스 목록 - 대기 정보 조회
     def list(self, request, *args, **kwargs):
+        today = timezone.now().date()
         if not request.user or not request.user.is_authenticated:
             return Response({
                 "status": "error",
@@ -189,7 +189,7 @@ class BoothWaitingStatusViewSet(CustomResponseMixin, viewsets.GenericViewSet, mi
                 "data": None
             }, status=status.HTTP_401_UNAUTHORIZED)
         try:
-            queryset = self.get_queryset().filter(is_GDGbooth=False)
+            queryset = self.get_queryset().filter(is_GDGbooth=False, booth_start_time__date=today)
             serializer = self.get_serializer(queryset, many=True)
             return custom_response(
                 data=serializer.data,
@@ -331,14 +331,14 @@ class GDGBoothViewSet(CustomResponseMixin, viewsets.GenericViewSet, mixins.Retri
         return GDGBoothDetailSerializer 
     
     def get_queryset(self):
-        today = timezone.now().date()
-        queryset = Booth.objects.all().filter(booth_start_time__date=today)  # 오늘 부스만
+        queryset = Booth.objects.all()
         return queryset.order_by('booth_name')
 
     # 부스 목록 조회
     def list(self, request, *args, **kwargs):
+        today = timezone.now().date()
         try:
-            queryset = self.get_queryset().filter(is_GDGbooth=True)
+            queryset = self.get_queryset().filter(is_GDGbooth=True, booth_start_time__date=today)
             serializer = self.get_serializer(queryset, many=True)
             return custom_response(
                 data=serializer.data,
