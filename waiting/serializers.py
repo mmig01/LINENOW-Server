@@ -68,7 +68,7 @@ class WaitingListSerializer(serializers.ModelSerializer):
         return Waiting.objects.filter(
             booth=obj.booth,
             created_at__lt=obj.created_at,
-            waiting_status='waiting'
+            waiting_status__in=['waiting', 'entering']
         ).count()
     
     def get_booth_info(self, obj):
@@ -100,7 +100,7 @@ class WaitingDetailSerializer(serializers.ModelSerializer):
         return Waiting.objects.filter(
             booth=obj.booth,
             created_at__lt=obj.created_at,
-            waiting_status='waiting'
+            waiting_status__in=['waiting', 'entering']
         ).count()
     
     def get_total_waiting_teams(self, obj):
